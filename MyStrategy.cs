@@ -24,8 +24,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     behavior = new CommanderBehavior(world, self, game);
                     break;
             }
-            behavior.Run(move);
 
+            behavior.Run(move);
             Console.WriteLine("Step: {7}  -  ID: {0}, Type: {1}, Action: {2}, [{3},{4}], AP: {5}, HP: {6}", self.Id,
                               self.Type, move.Action, move.X, move.Y, self.ActionPoints, self.Hitpoints, behavior.Step);
         }
@@ -34,11 +34,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
     public static class BattleManager
     {
         private static int _currentPoint;
-
-        public static int[,] Map;
         private static readonly List<Point> Points;
-        public static Point CurrentPoint;
+        private static int _countOfNeededAciton;
+        private static AdditionalAction _neededAction = AdditionalAction.None;
 
+        public static Point CurrentPoint;
+        public static int[,] Map;
         public static AdditionalAction NeededAction
         {
             get
@@ -53,9 +54,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 _countOfNeededAciton = 10;
             }
         }
-
-        private static int _countOfNeededAciton = 0;
-        private static AdditionalAction _neededAction = AdditionalAction.None;
 
         static BattleManager()
         {
