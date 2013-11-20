@@ -1,0 +1,9 @@
+obj
+bin
+*.pdb
+/OutTests
+/Out
+Bin
+_ReSharper.*
+.sonar
+MetricResults
