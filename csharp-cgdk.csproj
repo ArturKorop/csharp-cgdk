@@ -69,8 +69,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GlobalManager.cs" />
+    <Compile Include="CommanderBehavior.cs" />
+    <Compile Include="DefaultBehavior.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="IBehavior.cs" />
     <Compile Include="Information.cs" />
+    <Compile Include="MedicBehavior.cs" />
     <Compile Include="Model\Bonus.cs" />
     <Compile Include="Model\BonusType.cs" />
     <Compile Include="Model\ActionType.cs" />
@@ -91,7 +95,7 @@
     <Compile Include="Model\TrooperType.cs" />
     <Compile Include="Model\Unit.cs" />
     <Compile Include="Model\World.cs" />
-    <Compile Include="Strategy.cs" />
+    <Compile Include="SoldierBehavior.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">
