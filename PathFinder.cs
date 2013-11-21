@@ -27,8 +27,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         public List<Point> GetPath(Point target, Point self, List<Point> teammates)
         {
-            var tempMapField = new Point[30, 20];
-            Array.Copy(_mapField, tempMapField, _mapField.Length);
+            var tempMapField = CopyDeepMap();
             foreach (var teammate in teammates)
                 tempMapField[teammate.X, teammate.Y].Value = FieldStatus.Unavaliable;
 
@@ -44,13 +43,14 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 path.Add(new Point(result.X, result.Y));
                 result = result.Parent;
             }
+            path.Reverse();
+
             return path;
         } 
 
         public Point GetNextPoint(int currentX, int currentY, int targetX, int targetY, List<Point> teammates)
         {
-            var tempMapField = new Point[30,20];
-            Array.Copy(_mapField, tempMapField, _mapField.Length);
+            var tempMapField = CopyDeepMap();
             foreach (var temmate in teammates)
             {
                 tempMapField[temmate.X, temmate.Y].Value = FieldStatus.Unavaliable;
@@ -102,8 +102,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         public Point FindTargetPoint(int targetX, int targetY, IEnumerable<Point> temmates)
         {
-            var tempMapField = new Point[30, 20];
-            Array.Copy(_mapField, tempMapField, _mapField.Length);
+            var tempMapField = CopyDeepMap();
             foreach (var temmate in temmates)
                 tempMapField[temmate.X, temmate.Y].Value = FieldStatus.Unavaliable;
 
@@ -131,6 +130,21 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             }
 
             return null;
+        }
+
+        private Point[,] CopyDeepMap()
+        {
+            var tempMapField = new Point[30, 20];
+            for (int i = 0; i < 30; i++)
+            {
+                for (int j = 0; j < 20; j++)
+                {
+                    var temp = _mapField[i,j];
+                    tempMapField[i, j] = new Point(temp.X, temp.Y) {Value = temp.Value};
+                }
+            }
+
+            return tempMapField;
         }
     }
 

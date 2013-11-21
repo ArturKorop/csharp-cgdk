@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security.AccessControl;
+using System.Threading;
 using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Model;
 
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
@@ -26,8 +29,13 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             }
 
             behavior.Run(move);
-            Console.WriteLine("Step: {7}  -  ID: {0}, Type: {1}, Action: {2}, [{3},{4}], AP: {5}, HP: {6}", self.Id,
-                              self.Type, move.Action, move.X, move.Y, self.ActionPoints, self.Hitpoints, behavior.Step);
+            var text = String.Format("Step: {7}  -  ID: {0}, Type: {1}, Action: {2}, [{3},{4}], AP: {5}, HP: {6}",
+                                     self.Id,
+                                     self.Type, move.Action, move.X, move.Y, self.ActionPoints, self.Hitpoints,
+                                     behavior.Step);
+            Console.WriteLine(text);
+            
+            //BattleManager.Stream.WriteLine(text);
         }
     }
 
@@ -55,6 +63,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             }
         }
 
+        public static StreamWriter Stream;
+
         static BattleManager()
         {
             if (Points != null) return;
@@ -68,6 +78,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 };
 
             CurrentPoint = Points[_currentPoint];
+            
+            //Stream = new StreamWriter("log.txt", true);
         }
 
         public static void Init(Trooper trooper)
