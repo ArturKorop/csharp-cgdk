@@ -56,6 +56,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             finally
             {
                 remoteProcessClient.Close();
+                BattleManager.Log();
                 Console.ReadKey();
             }
         }

@@ -5,10 +5,6 @@ using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Model;
 
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 {
-    public class Strategy
-    {
-    }
-
     public interface IBehavior
     {
         void Run(Move move);
@@ -165,7 +161,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected override bool ShoutEnemy(Move move)
         {
-            if (Info.CanShoutedEnemiesImmediately.Count == 1 && Self.CanShout() && Info.VisibleEnemies.Count == 1)
+            if (Info.Teammates.Count == 0 && Info.CanShoutedEnemiesImmediately.Count == 1 && Self.CanShout() && Info.VisibleEnemies.Count == 1)
             {
                 var possibleTarget =
                     Info.CanShoutedEnemiesImmediately.Where(x => x.Hitpoints == Info.CanShoutedEnemiesImmediately.Min(y => y.Hitpoints))
@@ -231,6 +227,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected override bool MoveToEnemy(Move move)
         {
+            if (!Self.CanMoveCarefully()) return false;
+
             var commander = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Commander);
             if (commander == null)
             {
@@ -394,6 +392,14 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
                     return true;
                 }
+                if (Info.Action == AdditionalAction.MoveTo && Self.CanMove())
+                {
+                    move.Action = ActionType.Move;
+                    move.X = Info.NextPoint.X;
+                    move.Y = Info.NextPoint.Y;
+
+                    return true;
+                }
             }
 
             return false;
@@ -424,7 +430,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected virtual bool MustHealTeammateOrSelf(Move move)
         {
-            if (Self.Hitpoints <= 70 && Self.CanUseMedikit() &&
+            if (Self.Hitpoints <= 75 && Self.CanUseMedikit() &&
                 (Info.VisibleEnemies.Count > 0 || Info.Teammates.Count(x => x.Type == TrooperType.FieldMedic) == 0))
             {
                 move.Action = ActionType.UseMedikit;
@@ -482,6 +488,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 var minPath = Info.AvaliableBonuses.Select(
                     x => pathFinder.GetPath(new Point(x.X, x.Y), new Point(Self.X, Self.Y),
                                             GetTeammates())).Min(y => y.Count);
+                if (minPath > 5) return false;
+
                 var currentBonuse = Info.AvaliableBonuses.First(x => pathFinder.GetPath(new Point(x.X, x.Y), new Point(Self.X, Self.Y),
                                                                                         GetTeammates()).Count == minPath);
                 var nextPoint = pathFinder.GetNextPoint(Self.X, Self.Y, currentBonuse.X, currentBonuse.Y, GetTeammates());
@@ -610,8 +618,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             return self.Stance == TrooperStance.Standing
                        ? self.ActionPoints >= _game.StandingMoveCost + self.InitialActionPoints/2
                        : self.Stance == TrooperStance.Prone
-                             ? self.ActionPoints >= _game.ProneMoveCost + self.InitialActionPoints/2
-                             : self.ActionPoints >= _game.KneelingMoveCost + self.InitialActionPoints/2;
+                             ? self.ActionPoints >= _game.ProneMoveCost + self.InitialActionPoints / 2
+                             : self.ActionPoints >= _game.KneelingMoveCost + self.InitialActionPoints / 2;
         }
 
         public static int MoveCost(this Trooper self)

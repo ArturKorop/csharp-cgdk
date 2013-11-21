@@ -36,6 +36,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             CheckWoundedTeammates();
             CheckAvaliableBonuses();
             CheckCanKilledEnemiesImmediately();
+            CheckCanKilledEnemiesAfterMoving();
             CheckNeedingMoveToAnotherPoint();
             CheckPrepareStanceToMaxDamage();
             CheckCanUseGrenadeEnemiesImmediately();
@@ -173,7 +174,34 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                                               _world.Troopers.Where(x => x.IsTeammate && x.Id != _self.Id)
                                                     .Select(x => new Point(x.X, x.Y))
                                                     .ToList());
-                var currentPosition = path[0];
+                if (path == null || path.Count == 0) return;
+                var currentPoint = path[0];
+                if (_world.IsVisible(_self.ShootingRange, currentPoint.X, currentPoint.Y, _self.Stance, enemy.X, enemy.Y,
+                                     enemy.Stance))
+                {
+                    currentDamage = _self.GetDamage(_self.Stance)*
+                                    ((_self.ActionPoints - _self.MoveCost())/_self.ShootCost);
+                    if (enemy.Hitpoints <= currentDamage)
+                    {
+                        Action = AdditionalAction.MoveTo;
+                        NextPoint = currentPoint;
+                        return;
+                    }
+                }
+
+                if (path.Count == 1) return;
+                currentPoint = path[1];
+                if (_world.IsVisible(_self.ShootingRange, currentPoint.X, currentPoint.Y, _self.Stance, enemy.X, enemy.Y,
+                                     enemy.Stance))
+                {
+                    currentDamage = _self.GetDamage(_self.Stance) *
+                                    ((_self.ActionPoints - _self.MoveCost()) / _self.ShootCost);
+                    if (enemy.Hitpoints <= currentDamage)
+                    {
+                        Action = AdditionalAction.MoveTo;
+                        NextPoint = currentPoint;
+                    }
+                }
             }
             
         }
