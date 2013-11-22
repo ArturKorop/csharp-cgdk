@@ -11,7 +11,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
         }
 
-        protected override bool MustHealTeammateOrSelf(Move move)
+        protected override bool MustHealSelf(Move move)
         {
             var pathFinder = new PathFinder(World.Cells);
             if (Self.CanUseMedikit() && Info.WoundedTeammates.Count(x => x.Hitpoints <= 60) > 0 &&
@@ -19,7 +19,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             {
                 foreach (var teammate in Info.WoundedTeammates.Where(x => x.Hitpoints <= 60))
                 {
-                    var path = pathFinder.GetPath(new Point(teammate.X, teammate.Y), new Point(Self.X, Self.Y),
+                    var path = pathFinder.GetPathToNeighbourCell(new Point(teammate.X, teammate.Y), new Point(Self.X, Self.Y),
                                                   Info.Teammates.Select(x => new Point(x.X, x.Y)).ToList());
                     if (path.Count == 0)
                     {
@@ -109,6 +109,11 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             return false;
         }
 
+        protected override bool MustHealTeammate(Move move)
+        {
+            return false;
+        }
+
         protected override bool MoveToTeammate(Move move)
         {
             if (Info.Teammates.Count > 0 && Self.CanMove())
@@ -118,15 +123,14 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 var targetCommander = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Commander) ??
                                       Info.Teammates[0];
                 var pathFinder = new PathFinder(World.Cells);
-                var path = pathFinder.GetPath(new Point(targetTemamate.X, targetTemamate.Y), new Point(Self.X, Self.Y),
+                var path = pathFinder.GetPathToNeighbourCell(new Point(targetTemamate.X, targetTemamate.Y), new Point(Self.X, Self.Y),
                                               GetTeammates());
                 if (path.Count > Self.ActionPoints / Self.MoveCost())
                 {
                     pathFinder = new PathFinder(World.Cells);
-                    path = pathFinder.GetPath(new Point(targetCommander.X, targetCommander.Y), new Point(Self.X, Self.Y),
+                    path = pathFinder.GetPathToNeighbourCell(new Point(targetCommander.X, targetCommander.Y), new Point(Self.X, Self.Y),
                                               GetTeammates());
                 }
-                //TODO: possible no way!
                 if (path != null && path.Count > 0)
                 {
                     move.Action = ActionType.Move;
@@ -173,6 +177,16 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         }
 
         protected override bool MoveToEnemy(Move move)
+        {
+            return false;
+        }
+
+        protected override bool CheckPositionForTeammates(Move move)
+        {
+            return false;
+        }
+
+        protected override bool CheckBestPosition(Move move)
         {
             return false;
         }

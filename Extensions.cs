@@ -78,5 +78,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                    self.ActionPoints - _game.FieldRationEatCost + _game.FieldRationBonusActionPoints <=
                    self.InitialActionPoints;
         }
+
+        public static Point ToPoint(this Trooper self)
+        {
+            return new Point(self.X, self.Y);
+        }
     }
 }

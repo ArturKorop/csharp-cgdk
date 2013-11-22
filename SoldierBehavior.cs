@@ -12,7 +12,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected override bool MoveToTeammate(Move move)
         {
-            if (Info.Teammates.Count > 0 && Self.CanMove())
+            if (Info.Teammates.Count > 0 && Self.CanMove() && Info.CanShoutedEnemiesImmediately.Count == 0)
             {
                 var targetTemamate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Commander);
                 if (targetTemamate == null) return false;
@@ -20,15 +20,15 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 var medicTeammate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.FieldMedic) ??
                                       Info.Teammates[0];
                 var pathFinder = new PathFinder(World.Cells);
-                var path = pathFinder.GetPath(new Point(targetTemamate.X, targetTemamate.Y), new Point(Self.X, Self.Y),
+                var path = pathFinder.GetPathToNeighbourCell(new Point(targetTemamate.X, targetTemamate.Y), new Point(Self.X, Self.Y),
                                               GetTeammates());
                 pathFinder = new PathFinder(World.Cells);
-                var pathWithoutTeammates = pathFinder.GetPath(new Point(targetTemamate.X, targetTemamate.Y), new Point(Self.X, Self.Y),
+                var pathWithoutTeammates = pathFinder.GetPathToNeighbourCell(new Point(targetTemamate.X, targetTemamate.Y), new Point(Self.X, Self.Y),
                                               new List<Point>());
                 if (path.Count > Self.ActionPoints / Self.MoveCost() && path.Count >= pathWithoutTeammates.Count + 2)
                 {
                     pathFinder = new PathFinder(World.Cells);
-                    path = pathFinder.GetPath(new Point(medicTeammate.X, medicTeammate.Y), new Point(Self.X, Self.Y),
+                    path = pathFinder.GetPathToNeighbourCell(new Point(medicTeammate.X, medicTeammate.Y), new Point(Self.X, Self.Y),
                                               GetTeammates());
                 }
                 //TODO: possible no way!
@@ -94,10 +94,4 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             return false;
         }
     }
-
-    
-
-    
-
-    
 }

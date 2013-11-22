@@ -21,8 +21,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public List<Trooper> WoundedTeammates { get; private set; }
         public List<Bonus> AvaliableBonuses { get; private set; }
 
-        public AdditionalAction Action = AdditionalAction.None;
-        public Point NextPoint { get; set; }
+        /*public AdditionalAction Action = AdditionalAction.None;
+        public Point NextPoint { get; set; }*/
 
         public Information(World world, Trooper self, Game game)
         {
@@ -36,9 +36,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             CheckWoundedTeammates();
             CheckAvaliableBonuses();
             CheckCanKilledEnemiesImmediately();
-            CheckCanKilledEnemiesAfterMoving();
-            CheckNeedingMoveToAnotherPoint();
-            CheckPrepareStanceToMaxDamage();
+            //CheckCanKilledEnemiesAfterMoving();
+            //CheckNeedingMoveToAnotherPoint();
+            //CheckPrepareStanceToMaxDamage();
             CheckCanUseGrenadeEnemiesImmediately();
             CheckFightingEnemies();
         }
@@ -94,21 +94,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                                                               )).ToList();
         }
 
-        private void CheckPrepareStanceToMaxDamage()
-        {
-            if (CanShoutedEnemiesImmediately.Count == 0 || _self.Stance == TrooperStance.Prone || !_self.CanChangeStance() || Action != AdditionalAction.None || _self.Type == TrooperType.FieldMedic)
-                return;
-
-            int currentDamage = GetCurrentDamage();
-            TrooperStance lowerStance = _self.Stance == TrooperStance.Standing ? TrooperStance.Kneeling : TrooperStance.Prone;
-            if (!_world.IsVisible(_self.ShootingRange, _self.X, _self.Y, lowerStance, CanShoutedEnemiesImmediately[0].X,
-                                  CanShoutedEnemiesImmediately[0].Y, CanShoutedEnemiesImmediately[0].Stance)) return;
-            
-            var lowerStanceDamage = _self.GetDamage(lowerStance)*
-                                    ((_self.ActionPoints - _game.StanceChangeCost)/_self.ShootCost);
-            if (lowerStanceDamage >= currentDamage)
-                Action = AdditionalAction.SetLowerStance;
-        }
 
         private void CheckCanUseGrenadeEnemiesImmediately()
         {
@@ -140,9 +125,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             }
         }
 
-        private void CheckNeedingMoveToAnotherPoint()
+       /* private void CheckNeedingMoveToAnotherPoint()
         {
-            /*if (CanKilledEnemiesImmediately.Count > 0 || CanShoutedEnemiesImmediately.Count == 0 || _self.Type != TrooperType.Soldier) return;
+            if (CanKilledEnemiesImmediately.Count > 0 || CanShoutedEnemiesImmediately.Count == 0 || _self.Type != TrooperType.Soldier) return;
 
             var otherDangerTeammate =
                 Teammates.FirstOrDefault(x => x.Type == TrooperType.Commander);
@@ -156,10 +141,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             var nextPoint = pathFinder.GetNextPoint(_self.X, _self.Y, target.X, target.Y,
                                                     Teammates.Select(x => new Point(x.X, x.Y)).ToList());
             Action = AdditionalAction.MoveToTargetGlobalPoint;
-            NextPoint = nextPoint;*/
-        }
+            NextPoint = nextPoint;
+        }*/
 
-        private void CheckCanKilledEnemiesAfterMoving()
+        /*private void CheckCanKilledEnemiesAfterMoving()
         {
             if(_self.ActionPoints < _self.ShootCost + _self.MoveCost()) return;
 
@@ -170,7 +155,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             var pathFinder = new PathFinder(_world.Cells);
             foreach (var enemy in allCanKilledEnemies)
             {
-                var path = pathFinder.GetPath(new Point(enemy.X, enemy.Y), new Point(_self.X, _self.Y),
+                var path = pathFinder.GetPathToNeighbourCell(new Point(enemy.X, enemy.Y), new Point(_self.X, _self.Y),
                                               _world.Troopers.Where(x => x.IsTeammate && x.Id != _self.Id)
                                                     .Select(x => new Point(x.X, x.Y))
                                                     .ToList());
@@ -204,7 +189,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 }
             }
             
-        }
+        }*/
 
         private int GetCurrentDamage()
         {

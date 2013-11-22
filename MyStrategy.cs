@@ -68,11 +68,11 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             if (Points != null) return;
             Points = new List<Point>
                 {
+                    new Point(15, 10),
                     new Point(28, 1),
                     new Point(1, 1),
                     new Point(1, 18),
                     new Point(28, 18),
-                    new Point(15, 10),
                 };
 
             CurrentPoint = Points[_currentPoint];
@@ -80,20 +80,21 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         public static void Log()
         {
-            Stream = new StreamWriter("log.txt", true);
+            Stream = new StreamWriter("log"+ DateTime.Now.ToString("MMddHHmmss") +".txt", true);
             Stream.WriteLine(Text);
         }
 
         public static void Init(Trooper trooper)
         {
-            if (trooper.X > 15 && trooper.Y > 10)
+            _currentPoint = 0;
+            /*if (trooper.X > 15 && trooper.Y > 10)
                 _currentPoint = 0;
             else if (trooper.X > 15 && trooper.Y <= 10)
                 _currentPoint = 1;
             else if (trooper.X <= 15 && trooper.Y <= 10)
                 _currentPoint = 2;
             else
-                _currentPoint = 3;
+                _currentPoint = 3;*/
         }
 
         public static void UpdatePoint(Trooper[] troopers)

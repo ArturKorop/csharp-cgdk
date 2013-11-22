@@ -10,6 +10,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         protected readonly Information Info;
         protected readonly World World;
         protected readonly Game Game;
+        protected readonly PathFinder Path;
         public string Step { get; protected set; }
 
         public DefaultBehavior(World world, Trooper self, Game game)
@@ -17,6 +18,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             Self = self;
             World = world;
             Game = game;
+            Path = new PathFinder(World.Cells);
             Info = new Information(world, Self, game);
             BattleManager.UpdatePoint(World.Troopers.Where(x => x.IsTeammate).ToArray());
         }
@@ -29,6 +31,26 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 Step = "NeedDoSpecialAction";
                 return;
             }
+            if (CheckBestPosition(move))
+            {
+                Step = "CheckBestPosition";
+                return;
+            }
+            if (CheckPositionForTeammates(move))
+            {
+                Step = "CheckPositionForTeammates";
+                return;
+            }
+            if (RaiseStance(move))
+            {
+                Step = "RaiseStance";
+                return;
+            }
+            if (LowerStance(move))
+            {
+                Step = "LowerStance";
+                return;
+            }
             if (KillingEnemy(move))
             {
                 Step = "KillingEnemy";
@@ -39,19 +61,19 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 Step = "UseGrenade";
                 return;
             }
-            if (MustHealTeammateOrSelf(move))
+            if (MustHealSelf(move))
             {
-                Step = "MustHealTeammateOrSelf";
+                Step = "MustHealSelf";
+                return;
+            }
+            if (MustHealTeammate(move))
+            {
+                Step = "MustHealTeammate";
                 return;
             }
             if (ShoutEnemy(move))
             {
                 Step = "ShoutEnemy";
-                return;
-            }
-            if (MoveToEnemy(move))
-            {
-                Step = "MoveToEnemy";
                 return;
             }
             if (GatherBonus(move))
@@ -70,8 +92,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected virtual bool NeedDoSpecialAction(Move move)
         {
-            if (NeedDoSpecialAction_Action(move)) return true;
-            if (NeedDoSpecialAction_RaiseStance(move)) return true;
+
             if (NeedDoSpecialAction_EatFieldRation(move)) return true;
             if (NeedMoveToFreeTeammate(move)) return true;
 
@@ -80,18 +101,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         #region NeedDoSpecialActionFunc
 
-        protected bool NeedDoSpecialAction_RaiseStance(Move move)
-        {
-            if (Info.CanShoutedEnemiesImmediately.Count == 0 && Self.Stance != TrooperStance.Standing && Self.CanChangeStance())
-            {
-                move.Action = ActionType.RaiseStance;
-
-                return true;
-            }
-
-            return false;
-        }
-
         protected bool NeedDoSpecialAction_EatFieldRation(Move move)
         {
             if (Info.VisibleEnemies.Count > 0 && Self.NeedFieldRation())
@@ -99,29 +108,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 move.Action = ActionType.EatFieldRation;
 
                 return true;
-            }
-
-            return false;
-        }
-
-        protected bool NeedDoSpecialAction_Action(Move move)
-        {
-            if (Info.Action != AdditionalAction.None)
-            {
-                if (Info.Action == AdditionalAction.SetLowerStance && Self.CanChangeStance())
-                {
-                    move.Action = ActionType.LowerStance;
-
-                    return true;
-                }
-                if (Info.Action == AdditionalAction.MoveTo && Self.CanMove())
-                {
-                    move.Action = ActionType.Move;
-                    move.X = Info.NextPoint.X;
-                    move.Y = Info.NextPoint.Y;
-
-                    return true;
-                }
             }
 
             return false;
@@ -139,6 +125,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             if (Info.CanKilledEnemiesImmediately.Count >= 1 && Self.CanShout())
             {
                 var target = Info.CanKilledEnemiesImmediately.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
+                             Info.CanKilledEnemiesImmediately.FirstOrDefault(x => x.Type == TrooperType.Commander) ??
                              Info.CanKilledEnemiesImmediately[0];
 
                 move.Action = ActionType.Shoot;
@@ -150,10 +137,11 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             return false;
         }
 
-        protected virtual bool MustHealTeammateOrSelf(Move move)
+        protected virtual bool MustHealSelf(Move move)
         {
-            if (Self.Hitpoints <= 75 && Self.CanUseMedikit() &&
-                (Info.VisibleEnemies.Count > 0 || Info.Teammates.Count(x => x.Type == TrooperType.FieldMedic) == 0))
+            if (!Self.CanUseMedikit()) return false;
+
+            if (Self.Hitpoints <= 70 && Info.Teammates.Count(x => x.Type == TrooperType.FieldMedic) == 0)
             {
                 move.Action = ActionType.UseMedikit;
                 move.X = Self.X;
@@ -165,12 +153,101 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             return false;
         }
 
+        protected virtual bool MustHealTeammate(Move move)
+        {
+            if (!Self.CanUseMedikit() || Info.WoundedTeammates.Count == 0) return false;
+
+            var woundedNeighbourTeammates =
+                Info.WoundedTeammates.Where(
+                    woundedTeammate =>
+                    PathFinder.IsThisNeightbours(Self.ToPoint(), woundedTeammate.ToPoint()) &&
+                    woundedTeammate.Hitpoints <= 75).ToList();
+            if (woundedNeighbourTeammates.Count == 0) return false;
+
+            woundedNeighbourTeammates.Sort((x, y) => x.Hitpoints.CompareTo(y.Hitpoints));
+            move.Action = ActionType.UseMedikit;
+            move.X = woundedNeighbourTeammates.First().X;
+            move.Y = woundedNeighbourTeammates.First().Y;
+
+            return true;
+        }
+
+        protected virtual bool CheckBestPosition(Move move)
+        {
+            if (Info.CanKilledEnemiesImmediately.Any() || Info.CanShoutedEnemiesImmediately.Count > 0 ||
+                Info.VisibleEnemies.Count == 0 || Self.Stance != TrooperStance.Standing) return false;
+
+            return CheckBestPositionCalc(move, null);
+        }
+
+        private bool CheckBestPositionCalc(Move move, List<Point> forbiddenPoints)
+        {
+            var avaliablePoints = new List<Point>();
+            foreach (var visibleEnemy in Info.VisibleEnemies)
+            {
+                var teammatesAndForbiddenPoints = GetTeammates();
+                if (forbiddenPoints != null) teammatesAndForbiddenPoints.AddRange(forbiddenPoints);
+
+                avaliablePoints.AddRange(Path.AvaliablePositionToShout(Self, visibleEnemy, World,
+                                                                       teammatesAndForbiddenPoints));
+            }
+
+            if (avaliablePoints.Count == 0) return false;
+
+            var minPath =
+                avaliablePoints.Select(x => Path.GetPathToPoint(x, Self.ToPoint(), GetTeammates()))
+                               .OrderBy(x => x.Count)
+                               .First();
+            if (minPath.Count == 0) return false;
+
+            move.Action = ActionType.Move;
+            move.X = minPath.First().X;
+            move.Y = minPath.First().Y;
+
+            return true;
+        }
+
+        protected virtual bool CheckPositionForTeammates(Move move)
+        {
+            if (Info.CanKilledEnemiesImmediately.Any() || Info.CanShoutedEnemiesImmediately.Count == 0 ||
+                Info.Teammates.Count == 0) return false;
+
+            var otherDDTeamate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
+                                 Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Commander);
+            if (otherDDTeamate == null) return false;
+
+            var info = new Information(World, otherDDTeamate, Game);
+            if (info.CanKilledEnemiesImmediately.Any() || info.CanShoutedEnemiesImmediately.Any()) return false;
+
+            var avaliablePointsForTeammate = new List<Point>();
+            foreach (var visibleEnemy in Info.VisibleEnemies)
+                avaliablePointsForTeammate.AddRange(Path.AvaliablePositionToShout(otherDDTeamate, visibleEnemy, World,
+                                                                                  GetTeammates()));
+
+            if (avaliablePointsForTeammate.Count == 0) return false;
+
+            var minPath =
+                avaliablePointsForTeammate.Select(
+                    x =>
+                    Path.GetPathToPoint(x, otherDDTeamate.ToPoint(),
+                                        Info.Teammates.Where(y => y.Id != Self.Id).Select(z => z.ToPoint()).ToList()))
+                                          .OrderBy(x => x.Count)
+                                          .First();
+            if (minPath.Count == 0) return false;
+
+            if (minPath.Contains(Self.ToPoint()))
+                return CheckBestPositionCalc(move, new List<Point> {Self.ToPoint()});
+
+            return false;
+        }
+
         protected virtual bool ShoutEnemy(Move move)
         {
             if (Info.CanShoutedEnemiesImmediately.Count > 0 && Self.CanShout())
             {
                 var possibleTarget =
-                    Info.CanShoutedEnemiesImmediately.Where(x => x.Hitpoints == Info.CanShoutedEnemiesImmediately.Min(y => y.Hitpoints))
+                    Info.CanShoutedEnemiesImmediately.Where(
+                        x => x.Hitpoints == Info.CanShoutedEnemiesImmediately.Min(y => y.Hitpoints))
                         .ToArray();
                 var target = possibleTarget.FirstOrDefault(x => x.Type == TrooperType.FieldMedic);
                 target = target ?? possibleTarget[0];
@@ -208,19 +285,54 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 var pathFinder = new PathFinder(World.Cells);
 
                 var minPath = Info.AvaliableBonuses.Select(
-                    x => pathFinder.GetPath(new Point(x.X, x.Y), new Point(Self.X, Self.Y),
-                                            GetTeammates())).Min(y => y.Count);
+                    x => pathFinder.GetPathToNeighbourCell(new Point(x.X, x.Y), new Point(Self.X, Self.Y),
+                                                           GetTeammates())).Min(y => y.Count);
                 if (minPath > 5) return false;
 
-                var currentBonuse = Info.AvaliableBonuses.First(x => pathFinder.GetPath(new Point(x.X, x.Y), new Point(Self.X, Self.Y),
-                                                                                        GetTeammates()).Count == minPath);
+                var currentBonuse =
+                    Info.AvaliableBonuses.First(
+                        x => pathFinder.GetPathToNeighbourCell(new Point(x.X, x.Y), new Point(Self.X, Self.Y),
+                                                               GetTeammates()).Count == minPath);
                 var nextPoint = pathFinder.GetNextPoint(Self.X, Self.Y, currentBonuse.X, currentBonuse.Y, GetTeammates());
                 move.Action = ActionType.Move;
                 move.X = nextPoint.X;
                 move.Y = nextPoint.Y;
 
                 return true;
+            }
 
+            return false;
+        }
+
+        protected virtual bool RaiseStance(Move move)
+        {
+            if (!Self.CanChangeStance() || Info.CanShoutedEnemiesImmediately.Any() || Self.Stance == TrooperStance.Standing) return false;
+
+            move.Action = ActionType.RaiseStance;
+
+            return true;
+        }
+
+        protected virtual bool LowerStance(Move move)
+        {
+            if (!Self.CanChangeStance() || Info.CanShoutedEnemiesImmediately.Count == 0 ||
+                Self.Type == TrooperType.FieldMedic || Self.Stance == TrooperStance.Prone) return false;
+
+            int currentDamage = Self.GetDamage(Self.Stance)*(Self.ActionPoints/Self.ShootCost);
+            TrooperStance lowerStance = Self.Stance == TrooperStance.Standing
+                                            ? TrooperStance.Kneeling
+                                            : TrooperStance.Prone;
+            if (!World.IsVisible(Self.ShootingRange, Self.X, Self.Y, lowerStance, Info.CanShoutedEnemiesImmediately[0].X,
+                                 Info.CanShoutedEnemiesImmediately[0].Y, Info.CanShoutedEnemiesImmediately[0].Stance))
+                return false;
+
+            var lowerStanceDamage = Self.GetDamage(lowerStance)*
+                                    ((Self.ActionPoints - Game.StanceChangeCost)/Self.ShootCost);
+            if (lowerStanceDamage >= currentDamage)
+            {
+                move.Action = ActionType.LowerStance;
+
+                return true;
             }
 
             return false;
@@ -269,7 +381,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             {
                 var targetPoint = BattleManager.CurrentPoint;
                 var pathFinder = new PathFinder(World.Cells);
-                var nextPoint = pathFinder.GetNextPoint(Self.X, Self.Y, targetPoint.X, targetPoint.Y, GetTeammates());
+                var path = pathFinder.GetPathToNeighbourCell(new Point(targetPoint.X, targetPoint.Y), Self.ToPoint(),
+                                                           GetTeammates());
+                var nextPoint = path.FirstOrDefault();
                 if (nextPoint == null)
                 {
                     move.Action = ActionType.EndTurn;

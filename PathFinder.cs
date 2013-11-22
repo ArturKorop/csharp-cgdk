@@ -25,7 +25,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             }
         }
 
-        public List<Point> GetPath(Point target, Point self, List<Point> teammates)
+        public List<Point> GetPathToNeighbourCell(Point target, Point self, List<Point> teammates)
         {
             var tempMapField = CopyDeepMap();
             foreach (var teammate in teammates)
@@ -38,6 +38,30 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
             var path = new List<Point>();
             result = result.Parent;
+            while (result.X != self.X || result.Y != self.Y)
+            {
+                path.Add(new Point(result.X, result.Y));
+                result = result.Parent;
+            }
+            path.Reverse();
+
+            return path;
+        }
+
+        public List<Point> GetPathToPoint(Point target, Point self, List<Point> teammates)
+        {
+            var tempMapField = CopyDeepMap();
+            foreach (var teammate in teammates)
+                tempMapField[teammate.X, teammate.Y].Value = FieldStatus.Unavaliable;
+
+            if (tempMapField[target.X, target.Y].Value == FieldStatus.Unavaliable) return null;
+
+            _map = new Map(tempMapField, tempMapField[target.X, target.Y]);
+            var result = Find(tempMapField[self.X, self.Y], null);
+            if (result == null)
+                return null;
+
+            var path = new List<Point>();
             while (result.X != self.X || result.Y != self.Y)
             {
                 path.Add(new Point(result.X, result.Y));
@@ -74,6 +98,46 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             return tempResult;
         }
 
+        public Point FindTargetPoint(int targetX, int targetY, IEnumerable<Point> temmates)
+        {
+            var tempMapField = CopyDeepMap();
+            foreach (var temmate in temmates)
+                tempMapField[temmate.X, temmate.Y].Value = FieldStatus.Unavaliable;
+
+            var target = new Point(targetX, targetY);
+            if (target.Value == FieldStatus.Avaliable) return target;
+
+            _map = new Map(tempMapField, target);
+            var result = FindNearestAvaliablePoint(target, null);
+
+            return result;
+        }
+
+        public List<Point> AvaliablePositionToShout(Trooper self, Trooper target, World world, List<Point> teammates)
+        {
+            var points = new List<Point>();
+            for (int i = 0; i < 30; i++)
+            {
+                for (int j = 0; j < 20; j++)
+                {
+                    if (world.IsVisible(self.ShootingRange, i, j, self.Stance, target.X, target.Y, target.Stance))
+                    {
+                        var tempPoint = new Point(i, j);
+                        var path = GetPathToPoint(tempPoint, self.ToPoint(), teammates);
+                        if (path != null && path.Count <= (self.ActionPoints / self.MoveCost()))
+                            points.Add(new Point(i, j));
+                    }
+                }
+            }
+
+            return points;
+        } 
+
+        public static bool IsThisNeightbours(Point self, Point target)
+        {
+            return Math.Abs(self.X - target.X) + Math.Abs(self.Y - target.Y) == 1;
+        }
+
         private Point Find(Point self, IEnumerable<Point> allNeighbours)
         {
             var neighbours = _map.GetAvaliableNeighbours(self);
@@ -89,30 +153,15 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 return neighbour;
             }
 
-            if (allNeighbours == null) 
+            if (allNeighbours == null)
                 return null;
 
             var tempAllNeighbours = allNeighbours as List<Point>;
-            if (tempAllNeighbours == null) 
+            if (tempAllNeighbours == null)
                 return null;
 
             var minCost = tempAllNeighbours.Select(y => Math.Abs(y.X - _map.Target.X) + Math.Abs(y.Y - _map.Target.Y)).Min();
             return tempAllNeighbours.First(x => Math.Abs(x.X - _map.Target.X) + Math.Abs(x.Y - _map.Target.Y) == minCost);
-        }
-
-        public Point FindTargetPoint(int targetX, int targetY, IEnumerable<Point> temmates)
-        {
-            var tempMapField = CopyDeepMap();
-            foreach (var temmate in temmates)
-                tempMapField[temmate.X, temmate.Y].Value = FieldStatus.Unavaliable;
-
-            var target = new Point(targetX, targetY);
-            if (target.Value == FieldStatus.Avaliable) return target;
-
-            _map = new Map(tempMapField, target);
-            var result = FindNearestAvaliablePoint(target, null);
-
-            return result;
         }
 
         private Point FindNearestAvaliablePoint(Point target, IEnumerable<Point> allNeighbours)
@@ -148,7 +197,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         }
     }
 
-    public class Point
+    public class Point : IEquatable<Point>
     {
         public int X { get; set; }
         public int Y { get; set; }
@@ -161,6 +210,11 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
             X = x;
             Y = y;
+        }
+
+        public bool Equals(Point other)
+        {
+            return other.X == X && other.Y == Y;
         }
 
         public override string ToString()
