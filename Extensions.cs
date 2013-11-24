@@ -79,7 +79,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                    self.InitialActionPoints;
         }
 
-        public static Point ToPoint(this Trooper self)
+        public static Point ToPoint(this Unit self)
         {
             return new Point(self.X, self.Y);
         }

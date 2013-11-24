@@ -161,7 +161,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 Info.WoundedTeammates.Where(
                     woundedTeammate =>
                     PathFinder.IsThisNeightbours(Self.ToPoint(), woundedTeammate.ToPoint()) &&
-                    woundedTeammate.Hitpoints <= 75).ToList();
+                    woundedTeammate.Hitpoints <= 60).ToList();
             if (woundedNeighbourTeammates.Count == 0) return false;
 
             woundedNeighbourTeammates.Sort((x, y) => x.Hitpoints.CompareTo(y.Hitpoints));
@@ -175,7 +175,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         protected virtual bool CheckBestPosition(Move move)
         {
             if (Info.CanKilledEnemiesImmediately.Any() || Info.CanShoutedEnemiesImmediately.Count > 0 ||
-                Info.VisibleEnemies.Count == 0 || Self.Stance != TrooperStance.Standing) return false;
+                Info.VisibleEnemies.Count == 0 || Self.Stance != TrooperStance.Standing || !Self.CanMove()) return false;
 
             return CheckBestPositionCalc(move, null);
         }
@@ -210,7 +210,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         protected virtual bool CheckPositionForTeammates(Move move)
         {
             if (Info.CanKilledEnemiesImmediately.Any() || Info.CanShoutedEnemiesImmediately.Count == 0 ||
-                Info.Teammates.Count == 0) return false;
+                Info.Teammates.Count == 0 || !Self.CanMove()) return false;
 
             var otherDDTeamate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
                                  Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Commander);
@@ -280,7 +280,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected virtual bool GatherBonus(Move move)
         {
-            if (Info.AvaliableBonuses.Count > 0 && Self.CanMove())
+            if (Info.AvaliableBonuses.Count > 0 && ((Self.CanMove() && BattleManager.Step < 20) || (Self.CanMoveCarefully() && BattleManager.Step >= 20)))
             {
                 var pathFinder = new PathFinder(World.Cells);
 
@@ -377,7 +377,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected virtual bool MoveToTarget(Move move)
         {
-            if (Self.CanMoveCarefully() && Info.VisibleEnemies.Count == 0)
+            if (((Self.CanMove() && BattleManager.Step < 20) || (Self.CanMoveCarefully() && BattleManager.Step >= 20)) && Info.VisibleEnemies.Count == 0)
             {
                 var targetPoint = BattleManager.CurrentPoint;
                 var pathFinder = new PathFinder(World.Cells);

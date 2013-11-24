@@ -16,13 +16,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public List<Trooper> CanShoutedEnemiesImmediately { get; private set; }
         public List<Trooper> CanKilledEnemiesImmediately { get; private set; }
         public List<Trooper> CanKilledEnemiesAfterMoving { get; private set; }
-        public List<Trooper> CanUseGrenadeEnemiesImmediately { get;private set; } 
+        public List<Trooper> CanUseGrenadeEnemiesImmediately { get; private set; }
         public List<Trooper> Teammates { get; private set; }
         public List<Trooper> WoundedTeammates { get; private set; }
         public List<Bonus> AvaliableBonuses { get; private set; }
-
-        /*public AdditionalAction Action = AdditionalAction.None;
-        public Point NextPoint { get; set; }*/
 
         public Information(World world, Trooper self, Game game)
         {
@@ -74,24 +71,28 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             AvaliableBonuses = new List<Bonus>();
             if (VisibleEnemies.Count > 0) return;
 
+            var pathFinder = new PathFinder(_world.Cells);
             var troopers = _world.Troopers.Where(x => x.Id != _self.Id);
             AvaliableBonuses =
                 _world.Bonuses.Where(x => ((x.Type == BonusType.FieldRation && !_self.IsHoldingFieldRation) ||
                                            (x.Type == BonusType.Medikit && !_self.IsHoldingMedikit) ||
                                            (x.Type == BonusType.Grenade && !_self.IsHoldingGrenade)) &&
-                                          troopers.All(y => y.X != x.X && y.Y != x.Y)).ToList();
+                                          troopers.All(y => y.X != x.X && y.Y != x.Y) &&
+                                          pathFinder.GetPathToPoint(x.ToPoint(), _self.ToPoint(),
+                                                                    Teammates.Select(y => new Point(y.X, y.Y)).ToList())
+                                                    .Count < _self.ActionPoints/_self.MoveCost()).ToList();
         }
 
         private void CheckCanKilledEnemiesImmediately()
         {
             var defaultDmg = GetCurrentDamage();
             var tempCanShoutEnemies = _world.Troopers.Where(
-                     x =>
-                     !x.IsTeammate &&
-                     _world.IsVisible(_self.ShootingRange, _self.X, _self.Y, TrooperStance.Kneeling, x.X, x.Y, x.Stance))
-                                                 .ToList();
+                x =>
+                !x.IsTeammate &&
+                _world.IsVisible(_self.ShootingRange, _self.X, _self.Y, TrooperStance.Kneeling, x.X, x.Y, x.Stance))
+                                            .ToList();
             CanKilledEnemiesImmediately = tempCanShoutEnemies.Where(x => (x.Hitpoints <= defaultDmg
-                                                              )).ToList();
+                                                                         )).ToList();
         }
 
 
@@ -112,20 +113,22 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         private void CheckFightingEnemies()
         {
             FightingEnemies = new List<Trooper>();
-            if(VisibleEnemies == null || Teammates == null) return;
+            if (VisibleEnemies == null || Teammates == null) return;
             foreach (var teammate in Teammates)
             {
                 foreach (var visibleEnemy in VisibleEnemies)
                 {
-                    if(_world.IsVisible(teammate.ShootingRange, teammate.X, teammate.Y, teammate.Stance, visibleEnemy.X, visibleEnemy.Y, visibleEnemy.Stance))
+                    if (_world.IsVisible(teammate.ShootingRange, teammate.X, teammate.Y, teammate.Stance, visibleEnemy.X,
+                                         visibleEnemy.Y, visibleEnemy.Stance))
                         FightingEnemies.Add(visibleEnemy);
-                    else if (_world.IsVisible(visibleEnemy.ShootingRange, visibleEnemy.X, visibleEnemy.Y, visibleEnemy.Stance, teammate.X, teammate.Y, teammate.Stance))
+                    else if (_world.IsVisible(visibleEnemy.ShootingRange, visibleEnemy.X, visibleEnemy.Y,
+                                              visibleEnemy.Stance, teammate.X, teammate.Y, teammate.Stance))
                         FightingEnemies.Add(visibleEnemy);
                 }
             }
         }
 
-       /* private void CheckNeedingMoveToAnotherPoint()
+        /* private void CheckNeedingMoveToAnotherPoint()
         {
             if (CanKilledEnemiesImmediately.Count > 0 || CanShoutedEnemiesImmediately.Count == 0 || _self.Type != TrooperType.Soldier) return;
 
@@ -193,7 +196,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         private int GetCurrentDamage()
         {
-            return _self.GetDamage(_self.Stance) * (_self.ActionPoints / _self.ShootCost);
+            return _self.GetDamage(_self.Stance)*(_self.ActionPoints/_self.ShootCost);
         }
     }
 

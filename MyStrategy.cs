@@ -24,6 +24,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 case TrooperType.Commander:
                     behavior = new CommanderBehavior(world, self, game);
                     break;
+                case TrooperType.Sniper:
+                    behavior = new DefaultBehavior(world,self,game);
+                    break;
+                case TrooperType.Scout:
+                    behavior = new DefaultBehavior(world, self, game);
+                    break;
             }
 
             behavior.Run(move);
@@ -43,6 +49,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         private static int _countOfNeededAciton;
         private static AdditionalAction _neededAction = AdditionalAction.None;
 
+        public static int Step;
         public static Point CurrentPoint;
         public static int[,] Map;
         public static AdditionalAction NeededAction
@@ -68,11 +75,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             if (Points != null) return;
             Points = new List<Point>
                 {
-                    new Point(15, 10),
-                    new Point(28, 1),
                     new Point(1, 1),
                     new Point(1, 18),
                     new Point(28, 18),
+                    new Point(28, 1),
                 };
 
             CurrentPoint = Points[_currentPoint];
@@ -87,18 +93,19 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public static void Init(Trooper trooper)
         {
             _currentPoint = 0;
-            /*if (trooper.X > 15 && trooper.Y > 10)
+            if (trooper.X > 15 && trooper.Y > 10)
                 _currentPoint = 0;
             else if (trooper.X > 15 && trooper.Y <= 10)
                 _currentPoint = 1;
             else if (trooper.X <= 15 && trooper.Y <= 10)
                 _currentPoint = 2;
             else
-                _currentPoint = 3;*/
+                _currentPoint = 3;
         }
 
         public static void UpdatePoint(Trooper[] troopers)
         {
+            Step++;
             if (
                 troopers.Any(
                     trooper =>
@@ -108,8 +115,24 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 return;
             }
 
-            if (_currentPoint < Points.Count - 1) _currentPoint++;
-            else _currentPoint = 0;
+            switch (_currentPoint)
+            {
+                case 0:
+                    _currentPoint = 2;
+                    break;
+                case 1:
+                    _currentPoint = 3;
+                    break;
+                case 2:
+                    _currentPoint = 0;
+                    break;
+                case 3:
+                    _currentPoint = 1;
+                    break;
+            }
+
+            //if (_currentPoint < Points.Count - 1) _currentPoint++;
+            //else _currentPoint = 0;
             CurrentPoint = Points[_currentPoint];
         }
     }
