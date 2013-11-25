@@ -70,6 +70,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommanderBehavior.cs" />
+    <Compile Include="DefaultBehaviorV2.cs" />
     <Compile Include="DefaultBehavior.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="IBehavior.cs" />
@@ -95,6 +96,7 @@
     <Compile Include="Model\TrooperType.cs" />
     <Compile Include="Model\Unit.cs" />
     <Compile Include="Model\World.cs" />
+    <Compile Include="SniperBehavior.cs" />
     <Compile Include="SoldierBehavior.cs" />
   </ItemGroup>
   <ItemGroup>

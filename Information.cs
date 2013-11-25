@@ -13,6 +13,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         public List<Trooper> VisibleEnemies { get; private set; }
         public List<Trooper> FightingEnemies { get; private set; }
+        public List<Trooper> DangerEnemies { get; private set; }
         public List<Trooper> CanShoutedEnemiesImmediately { get; private set; }
         public List<Trooper> CanKilledEnemiesImmediately { get; private set; }
         public List<Trooper> CanKilledEnemiesAfterMoving { get; private set; }
@@ -38,6 +39,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             //CheckPrepareStanceToMaxDamage();
             CheckCanUseGrenadeEnemiesImmediately();
             CheckFightingEnemies();
+            CheckDangerEnemies();
         }
 
         private void CheckVisibleEnemies()
@@ -69,18 +71,19 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         private void CheckAvaliableBonuses()
         {
             AvaliableBonuses = new List<Bonus>();
-            if (VisibleEnemies.Count > 0) return;
-
             var pathFinder = new PathFinder(_world.Cells);
-            var troopers = _world.Troopers.Where(x => x.Id != _self.Id);
+            var troopers = _world.Troopers.Where(x => x.Id != _self.Id).Select(x => x.ToPoint()).ToList();
             AvaliableBonuses =
                 _world.Bonuses.Where(x => ((x.Type == BonusType.FieldRation && !_self.IsHoldingFieldRation) ||
                                            (x.Type == BonusType.Medikit && !_self.IsHoldingMedikit) ||
                                            (x.Type == BonusType.Grenade && !_self.IsHoldingGrenade)) &&
-                                          troopers.All(y => y.X != x.X && y.Y != x.Y) &&
+                                          !troopers.Contains(x.ToPoint()) &&
                                           pathFinder.GetPathToPoint(x.ToPoint(), _self.ToPoint(),
                                                                     Teammates.Select(y => new Point(y.X, y.Y)).ToList())
-                                                    .Count < _self.ActionPoints/_self.MoveCost()).ToList();
+                                          != null && pathFinder.GetPathToPoint(x.ToPoint(), _self.ToPoint(),
+                                                                               Teammates.Select(y => new Point(y.X, y.Y))
+                                                                                        .ToList()).Count <= 3
+                    /*_self.ActionPoints/_self.MoveCost()*/).ToList();
         }
 
         private void CheckCanKilledEnemiesImmediately()
@@ -114,6 +117,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
             FightingEnemies = new List<Trooper>();
             if (VisibleEnemies == null || Teammates == null) return;
+
             foreach (var teammate in Teammates)
             {
                 foreach (var visibleEnemy in VisibleEnemies)
@@ -125,6 +129,19 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                                               visibleEnemy.Stance, teammate.X, teammate.Y, teammate.Stance))
                         FightingEnemies.Add(visibleEnemy);
                 }
+            }
+        }
+
+        private void CheckDangerEnemies()
+        {
+            DangerEnemies = new List<Trooper>();
+            if (VisibleEnemies == null) return;
+
+            foreach (var visibleEnemy in VisibleEnemies)
+            {
+                if (_world.IsVisible(visibleEnemy.ShootingRange, visibleEnemy.X, visibleEnemy.Y,
+                                     visibleEnemy.Stance, _self.X, _self.Y, _self.Stance))
+                    DangerEnemies.Add(visibleEnemy);
             }
         }
 

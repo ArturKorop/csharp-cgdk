@@ -131,6 +131,54 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             }
 
             return points;
+        }
+
+        public Point GetSafePoint(Trooper self, List<Trooper> enemies, World world, List<Point> teammates)
+        {
+            if (self.X == 29 || self.X == 0 || self.Y == 0 || self.Y == 19) return null;
+
+            var tempMap = CopyDeepMap();
+            var avaliableNeighbours = new List<Point>();
+            int x = self.X - 1;
+            int y = self.Y;
+            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X -1 && t.Y == self.Y))
+                avaliableNeighbours.Add(new Point(x,y));
+
+            x = self.X + 1;
+            y = self.Y;
+            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X -1 && t.Y == self.Y))
+                avaliableNeighbours.Add(new Point(x,y));
+
+            x = self.X;
+            y = self.Y - 1;
+            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X -1 && t.Y == self.Y))
+                avaliableNeighbours.Add(new Point(x,y));
+
+            x = self.X;
+            y = self.Y + 1;
+            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X -1 && t.Y == self.Y))
+                avaliableNeighbours.Add(new Point(x,y));
+
+            if (avaliableNeighbours.Count == 0) return null;
+
+            var warningPoints = new List<Point>();
+            foreach (var enemy in enemies)
+            {
+                for (int i = 0; i < 30; i++)
+                {
+                    for (int j = 0; j < 20; j++)
+                    {
+                        if (world.IsVisible(enemy.ShootingRange, enemy.X, enemy.Y, enemy.Stance, i, j, self.Stance))
+                        {
+                            warningPoints.Add(new Point(i,j));
+                        }
+                    }
+                }
+            }
+
+            var safePoints = avaliableNeighbours.Where(an => !warningPoints.Contains(an)).ToList();
+
+            return !safePoints.Any() ? null : safePoints.First();
         } 
 
         public static bool IsThisNeightbours(Point self, Point target)

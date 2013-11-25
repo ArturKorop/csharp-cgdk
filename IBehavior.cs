@@ -5,6 +5,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
     public interface IBehavior
     {
         void Run(Move move);
-        string Step { get; }
+        string StepInfo { get; }
+        string AddInfo { get; }
     }
 }

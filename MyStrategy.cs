@@ -12,31 +12,32 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
             Extensions.Init(game);
             BattleManager.Init(world.Troopers.First(x => x.IsTeammate));
-            IBehavior behavior = new DefaultBehavior(world, self, game);
+            IBehavior behavior = null;
             switch (self.Type)
             {
                 case TrooperType.FieldMedic:
                     behavior = new MedicBehavior(world, self, game);
                     break;
                 case TrooperType.Soldier:
-                    behavior = new SoldierBehavior(world, self, game);
+                    behavior = new DefaultBehaviorV2(world, self, game);
                     break;
                 case TrooperType.Commander:
-                    behavior = new CommanderBehavior(world, self, game);
+                    behavior = new DefaultBehaviorV2(world, self, game);
                     break;
                 case TrooperType.Sniper:
-                    behavior = new DefaultBehavior(world,self,game);
+                    behavior = new DefaultBehaviorV2(world, self, game);
                     break;
                 case TrooperType.Scout:
-                    behavior = new DefaultBehavior(world, self, game);
+                    behavior = new DefaultBehaviorV2(world, self, game);
                     break;
             }
 
+            if(behavior == null) return;
             behavior.Run(move);
-            var text = String.Format("Step: {7}  -  ID: {0}, Type: {1}, Action: {2}, [{3},{4}], AP: {5}, HP: {6}",
+            var text = String.Format("Step[{8}]: {7}  -  ID: {0}, Type: {1}, Action: {2}, [{3},{4}], AP: {5}, HP: {6}   AddInfo - {9}",
                                      self.Id,
                                      self.Type, move.Action, move.X, move.Y, self.ActionPoints, self.Hitpoints,
-                                     behavior.Step);
+                                     behavior.StepInfo, BattleManager.Step, behavior.AddInfo);
             Console.WriteLine(text);
             BattleManager.Text += text + Environment.NewLine;
         }
@@ -44,10 +45,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
     public static class BattleManager
     {
-        private static int _currentPoint;
+        private static int _currentPoint = -1;
         private static readonly List<Point> Points;
         private static int _countOfNeededAciton;
         private static AdditionalAction _neededAction = AdditionalAction.None;
+
+        public const int StepCarefullCount = 18;
 
         public static int Step;
         public static Point CurrentPoint;
@@ -80,8 +83,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     new Point(28, 18),
                     new Point(28, 1),
                 };
-
-            CurrentPoint = Points[_currentPoint];
         }
 
         public static void Log()
@@ -92,7 +93,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         public static void Init(Trooper trooper)
         {
-            _currentPoint = 0;
+            if(_currentPoint != -1) return;
             if (trooper.X > 15 && trooper.Y > 10)
                 _currentPoint = 0;
             else if (trooper.X > 15 && trooper.Y <= 10)
@@ -101,6 +102,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 _currentPoint = 2;
             else
                 _currentPoint = 3;
+
+            CurrentPoint = Points[_currentPoint];
         }
 
         public static void UpdatePoint(Trooper[] troopers)
