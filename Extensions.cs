@@ -1,4 +1,6 @@
-﻿using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Model;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk.Model;
 
 namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 {
@@ -83,5 +85,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
             return new Point(self.X, self.Y);
         }
+
+        public static List<Point> ToPointList(this IEnumerable<Unit> enumerable)
+        {
+            return enumerable.Select(x => x.ToPoint()).ToList();
+        } 
     }
 }

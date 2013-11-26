@@ -141,22 +141,22 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             var avaliableNeighbours = new List<Point>();
             int x = self.X - 1;
             int y = self.Y;
-            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X -1 && t.Y == self.Y))
+            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X - 1 && t.Y == self.Y))
                 avaliableNeighbours.Add(new Point(x,y));
 
             x = self.X + 1;
             y = self.Y;
-            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X -1 && t.Y == self.Y))
+            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X + 1 && t.Y == self.Y))
                 avaliableNeighbours.Add(new Point(x,y));
 
             x = self.X;
             y = self.Y - 1;
-            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X -1 && t.Y == self.Y))
+            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X && t.Y == self.Y - 1))
                 avaliableNeighbours.Add(new Point(x,y));
 
             x = self.X;
             y = self.Y + 1;
-            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X -1 && t.Y == self.Y))
+            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X && t.Y == self.Y + 1))
                 avaliableNeighbours.Add(new Point(x,y));
 
             if (avaliableNeighbours.Count == 0) return null;

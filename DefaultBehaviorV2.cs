@@ -42,11 +42,15 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             PossibleActions += CanHealTeammate;
             PossibleActions += CanMoveToTeammate;
             PossibleActions += CanWaitAll;
+            PossibleActions += CanStayNearTeammate;
+            PossibleActions += CanReatreate;
+            PossibleActions += CanShoutHiddenEnemies;
+            PossibleActions += CanGoToLaggardTeammate;
         }
 
         public void Run(Move move)
         {
-            BattleManagerV2.Update(World.Troopers.Where(x=>x.IsTeammate).ToList());
+            BattleManagerV2.Update(World.Troopers.Where(x => x.IsTeammate).ToList());
             PossibleActions();
             var currentMove = PriorityActions.Single(pa => pa.Priority == PriorityActions.Max(pam => pam.Priority));
             StepInfo = currentMove.Message;
@@ -61,9 +65,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             if (Info.CanKilledEnemiesImmediately.Count == 0 || !Self.CanShout()) return;
 
             var targetEnemy = Info.CanKilledEnemiesImmediately.FirstOrDefault(e => e.Type == TrooperType.Sniper) ??
-                              Info.CanShoutedEnemiesImmediately.FirstOrDefault(e => e.Type == TrooperType.Soldier) ??
-                              Info.CanShoutedEnemiesImmediately.FirstOrDefault(e => e.Type == TrooperType.Commander) ??
-                              Info.CanShoutedEnemiesImmediately.First();
+                              Info.CanKilledEnemiesImmediately.FirstOrDefault(e => e.Type == TrooperType.Soldier) ??
+                              Info.CanKilledEnemiesImmediately.FirstOrDefault(e => e.Type == TrooperType.Commander) ??
+                              Info.CanKilledEnemiesImmediately.First();
 
             AddAction(new Move {Action = ActionType.Shoot, X = targetEnemy.X, Y = targetEnemy.Y}, Priority.Kill,
                       "CanKillEnemies",
@@ -133,18 +137,21 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         protected virtual void CanGatherBonus()
         {
             if (Info.AvaliableBonuses.Count == 0 || !Self.CanMoveCarefully()) return;
-            
+
             var minPath =
                 Info.AvaliableBonuses.Select(
                     x =>
-                    CurrentPathFinder.GetPathToNeighbourCell(new Point(x.X, x.Y), new Point(Self.X, Self.Y), GetTeammates()))
+                    CurrentPathFinder.GetPathToNeighbourCell(new Point(x.X, x.Y), new Point(Self.X, Self.Y),
+                                                             GetTeammates()))
                     .Min(y => y.Count);
             var currentBonuse =
                 Info.AvaliableBonuses.First(
                     x =>
-                    CurrentPathFinder.GetPathToNeighbourCell(new Point(x.X, x.Y), new Point(Self.X, Self.Y), GetTeammates())
-                              .Count == minPath);
-            var nextPoint = CurrentPathFinder.GetNextPoint(Self.X, Self.Y, currentBonuse.X, currentBonuse.Y, GetTeammates());
+                    CurrentPathFinder.GetPathToNeighbourCell(new Point(x.X, x.Y), new Point(Self.X, Self.Y),
+                                                             GetTeammates())
+                                     .Count == minPath);
+            var nextPoint = CurrentPathFinder.GetNextPoint(Self.X, Self.Y, currentBonuse.X, currentBonuse.Y,
+                                                           GetTeammates());
             AddAction(new Move {Action = ActionType.Move, X = nextPoint.X, Y = nextPoint.Y}, Priority.GatherBonus,
                       "CanGatherBonus",
                       String.Format("Bonus[{0},{1}] - {2}", currentBonuse.X, currentBonuse.Y, currentBonuse.Type));
@@ -214,7 +221,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             var pathFinder = new PathFinder(World.Cells);
             var path = pathFinder.GetPathToNeighbourCell(new Point(targetPoint.X, targetPoint.Y), Self.ToPoint(),
                                                          GetTeammates());
-            if(path == null) return;
+            if (path == null) return;
             var nextPoint = path.FirstOrDefault();
             if (nextPoint == null)
                 return;
@@ -226,6 +233,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 return;
             }
 
+            BattleManagerV2.HiddenEnemies.Clear();
             AddAction(new Move {Action = ActionType.Move, X = nextPoint.X, Y = nextPoint.Y}, Priority.MoveToWayPoint,
                       "CanMoveToTarget", String.Format("WayPoint[{0},{1}]", targetPoint.X, targetPoint.Y));
         }
@@ -264,7 +272,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
             if (!Self.CanMove() || Info.Teammates.Count == 0 || Self.Id == BattleManagerV2.HeadOfSquad.Id) return;
 
-            var path = CurrentPathFinder.GetPathToNeighbourCell(BattleManagerV2.HeadOfSquad.ToPoint(), Self.ToPoint(), GetTeammates());
+            var path = CurrentPathFinder.GetPathToNeighbourCell(BattleManagerV2.HeadOfSquad.ToPoint(), Self.ToPoint(),
+                                                                GetTeammates());
             if (path.Count == 0) return;
 
             var nextPoint = path.First();
@@ -278,11 +287,58 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             if (!Self.CanMove() || Info.Teammates.Count == 0 || Self.Id != BattleManagerV2.HeadOfSquad.Id) return;
 
             var pathes =
-                Info.Teammates.Select(x => CurrentPathFinder.GetPathToNeighbourCell(Self.ToPoint(), x.ToPoint(), new List<Point>()));
+                Info.Teammates.Select(
+                    x => CurrentPathFinder.GetPathToNeighbourCell(Self.ToPoint(), x.ToPoint(), new List<Point>()))
+                    .ToList();
 
-            var maxPath = pathes.Max(x=>x.Count);
-            if(maxPath >= 4)
-                AddAction(new Move { Action = ActionType.EndTurn }, Priority.WaitAll, "CanWaitAll", "");
+            var maxPath = pathes.Max(x => x.Count);
+            if (maxPath >= 4)
+                AddAction(new Move {Action = ActionType.EndTurn}, Priority.WaitAll, "CanWaitAll", "");
+        }
+
+        protected virtual void CanGoToLaggardTeammate()
+        {
+            if (!Self.CanMove() || Info.Teammates.Count == 0 || Self.Id != BattleManagerV2.HeadOfSquad.Id) return;
+
+            var pathes =
+                Info.Teammates.Select(
+                    x => CurrentPathFinder.GetPathToNeighbourCell(x.ToPoint(), Self.ToPoint(), new List<Point>()))
+                    .ToList();
+
+            var maxPath = pathes.Max(x => x.Count);
+            if (maxPath > 5)
+            {
+                var currentPath = pathes.First(x => x.Count == maxPath);
+                var nextPoint = currentPath.First();
+                AddAction(new Move {Action = ActionType.Move, X = nextPoint.X, Y = nextPoint.Y},
+                          Priority.GoToLaggardTeammate, "CanGoToLaggardTeammate", "");
+            }
+        }
+
+        protected virtual void CanStayNearTeammate()
+        {
+        }
+
+        protected virtual void CanReatreate()
+        {
+        }
+
+        protected virtual void CanShoutHiddenEnemies()
+        {
+            if (Info.CanShoutedEnemiesImmediately.Any() || !Self.CanShout() || BattleManagerV2.HiddenEnemies.Count == 0)
+                return;
+
+            foreach (var hiddenEnemy in BattleManagerV2.HiddenEnemies)
+            {
+                if (World.IsVisible(Self.ShootingRange, Self.X, Self.Y, Self.Stance, hiddenEnemy.X, hiddenEnemy.Y,
+                                    hiddenEnemy.Stance))
+                {
+                    AddAction(new Move {Action = ActionType.Shoot, X = hiddenEnemy.X, Y = hiddenEnemy.Y}, Priority.Shout,
+                              "CanShoutHiddenEnemies", "");
+                }
+
+                return;
+            }
         }
 
         protected void AddAction(Move move, Priority priority, string message, string addInfo)
@@ -326,6 +382,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public static int Step;
         public static List<TrooperStatus> TeamStatus;
         public static Trooper HeadOfSquad;
+        public static List<Trooper> HiddenEnemies = new List<Trooper>();
 
         public static void Update(List<Trooper> team)
         {
@@ -338,8 +395,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 TeamStatus.Add(new TrooperStatus {Trooper = trooper, Status = TrooperCurrentStatus.None});
             }
 
-            HeadOfSquad = team.FirstOrDefault(x => x.Type == TrooperType.Commander) ??
-                          team.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
+            HeadOfSquad = team.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
+                          team.FirstOrDefault(x => x.Type == TrooperType.Commander) ??
                           team[0];
         }
 
@@ -370,18 +427,22 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         Kill = 100,
         RauseStanceNotInFight = 99,
         UseGrenade = 98,
+        GoToLaggardTeammate = 96,
         HealTeammate = 95,
+        MedicMoveToTeammate = 93,
         HealSelf = 90,
         SetBestPosition = 85,
+        Retreat = 84,
         EatFieldRation = 83,
         LowerStance = 80,
         Shout = 75,
         RaiseStanceInFight = 65,
         WaitAll = 63,
         GatherBonus = 60,
+        EndTurnNearTeammate = 57,
         MoveToTeammate = 55,
         MoveToWayPoint = 50,
-        EndTurn = 0
+        EndTurn = 0,
     }
 
     public struct MoveAction

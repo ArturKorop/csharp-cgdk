@@ -33,7 +33,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     }
                     if (path.Count*Self.MoveCost() + Game.MedikitUseCost <= Self.ActionPoints)
                     {
-                        AddAction(new Move { Action = ActionType.Move, X = path.First().X, Y = path.First().Y }, Priority.HealTeammate, "CanHealTeammate", String.Format("Teammate: {0}[{1},{2}]", teammate.Type, teammate.X, teammate.Y));
+                        AddAction(new Move {Action = ActionType.Move, X = path.First().X, Y = path.First().Y},
+                                  Priority.HealTeammate, "CanHealTeammate",
+                                  String.Format("Teammate: {0}[{1},{2}]", teammate.Type, teammate.X, teammate.Y));
 
                         return;
                     }
@@ -45,7 +47,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 {
                     if (Math.Abs(Self.X - woundedTeammate.X) + Math.Abs(Self.Y - woundedTeammate.Y) == 1)
                     {
-                        AddAction(new Move { Action = ActionType.Heal, X = woundedTeammate.X, Y = woundedTeammate.Y }, Priority.HealTeammate, "CanHealTeammate", String.Format("Teammate: {0}[{1},{2}]", woundedTeammate.Type, woundedTeammate.X, woundedTeammate.Y));
+                        AddAction(new Move {Action = ActionType.Heal, X = woundedTeammate.X, Y = woundedTeammate.Y},
+                                  Priority.HealTeammate, "CanHealTeammate",
+                                  String.Format("Teammate: {0}[{1},{2}]", woundedTeammate.Type, woundedTeammate.X,
+                                                woundedTeammate.Y));
 
                         return;
                     }
@@ -53,13 +58,15 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             }
             if (Self.Hitpoints <= 60 && Self.CanUseMedikit())
             {
-                AddAction(new Move { Action = ActionType.UseMedikit, X = Self.X, Y = Self.Y }, Priority.HealTeammate, "CanHealSelf", String.Format("Self: {0}[{1},{2}]", Self.Type, Self.X, Self.Y));
+                AddAction(new Move {Action = ActionType.UseMedikit, X = Self.X, Y = Self.Y}, Priority.HealSelf,
+                          "CanHealSelf", String.Format("Self: {0}[{1},{2}]", Self.Type, Self.X, Self.Y));
 
                 return;
             }
             if (Self.Hitpoints < Self.MaximalHitpoints && Self.CanHeal())
             {
-                AddAction(new Move { Action = ActionType.Heal, X = Self.X, Y = Self.Y }, Priority.HealTeammate, "CanHealSelf", String.Format("Teammate: {0}[{1},{2}]", Self.Type, Self.X, Self.Y));
+                AddAction(new Move {Action = ActionType.Heal, X = Self.X, Y = Self.Y}, Priority.HealSelf,
+                          "CanHealSelf", String.Format("Teammate: {0}[{1},{2}]", Self.Type, Self.X, Self.Y));
 
                 return;
             }
@@ -72,13 +79,16 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 var targetPoint = pathFinder.GetNextPoint(Self.X, Self.Y, target.X, target.Y,
                                                           Info.Teammates.Select(x => new Point(x.X, x.Y)).ToList());
 
-                AddAction(new Move { Action = ActionType.Move, X = targetPoint.X, Y = targetPoint.Y }, Priority.HealTeammate, "CanHealTeammate", String.Format("Teammate: {0}[{1},{2}]", target.Type, target.X, target.Y));
+                AddAction(new Move {Action = ActionType.Move, X = targetPoint.X, Y = targetPoint.Y},
+                          Priority.HealTeammate, "CanHealTeammate",
+                          String.Format("Teammate: {0}[{1},{2}]", target.Type, target.X, target.Y));
 
                 return;
             }
             if (Self.Hitpoints < Self.MaximalHitpoints && Self.CanHeal())
             {
-                AddAction(new Move { Action = ActionType.Heal, X = Self.X, Y = Self.Y }, Priority.HealTeammate, "CanHealSelf", String.Format("Self: {0}[{1},{2}]", Self.Type, Self.X, Self.Y));
+                AddAction(new Move {Action = ActionType.Heal, X = Self.X, Y = Self.Y}, Priority.HealSelf,
+                          "CanHealSelf", String.Format("Self: {0}[{1},{2}]", Self.Type, Self.X, Self.Y));
             }
         }
 
@@ -90,9 +100,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
             if (Info.Teammates.Count > 0 && Self.CanMove())
             {
-                var targetTemamate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
+                var targetTemamate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Commander) ??
                                      Info.Teammates[0];
-                var targetCommander = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Commander) ??
+                var targetOtherTeammate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
                                       Info.Teammates[0];
                 var pathFinder = new PathFinder(World.Cells);
                 var path = pathFinder.GetPathToNeighbourCell(new Point(targetTemamate.X, targetTemamate.Y),
@@ -101,13 +111,14 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 if (path.Count > Self.ActionPoints/Self.MoveCost())
                 {
                     pathFinder = new PathFinder(World.Cells);
-                    path = pathFinder.GetPathToNeighbourCell(new Point(targetCommander.X, targetCommander.Y),
+                    path = pathFinder.GetPathToNeighbourCell(new Point(targetOtherTeammate.X, targetOtherTeammate.Y),
                                                              new Point(Self.X, Self.Y),
                                                              GetTeammates());
                 }
                 if (path != null && path.Count > 0)
                 {
-                    AddAction(new Move { Action = ActionType.Move, X = path.First().X, Y = path.First().Y }, Priority.MoveToTeammate, "CanMoveToTeammate", "");
+                    AddAction(new Move {Action = ActionType.Move, X = path.First().X, Y = path.First().Y},
+                              Priority.MedicMoveToTeammate, "CanMoveToTeammate", "");
                 }
             }
         }
@@ -142,17 +153,20 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             var minPath =
                 Info.AvaliableBonuses.Select(
                     x =>
-                    CurrentPathFinder.GetPathToNeighbourCell(new Point(x.X, x.Y), new Point(Self.X, Self.Y), GetTeammates()))
+                    CurrentPathFinder.GetPathToNeighbourCell(new Point(x.X, x.Y), new Point(Self.X, Self.Y),
+                                                             GetTeammates()))
                     .Min(y => y.Count);
-            if(minPath > 3) return;
+            if (minPath > 3) return;
 
             var currentBonuse =
                 Info.AvaliableBonuses.First(
                     x =>
-                    CurrentPathFinder.GetPathToNeighbourCell(new Point(x.X, x.Y), new Point(Self.X, Self.Y), GetTeammates())
-                              .Count == minPath);
-            var nextPoint = CurrentPathFinder.GetNextPoint(Self.X, Self.Y, currentBonuse.X, currentBonuse.Y, GetTeammates());
-            AddAction(new Move { Action = ActionType.Move, X = nextPoint.X, Y = nextPoint.Y }, Priority.GatherBonus,
+                    CurrentPathFinder.GetPathToNeighbourCell(new Point(x.X, x.Y), new Point(Self.X, Self.Y),
+                                                             GetTeammates())
+                                     .Count == minPath);
+            var nextPoint = CurrentPathFinder.GetNextPoint(Self.X, Self.Y, currentBonuse.X, currentBonuse.Y,
+                                                           GetTeammates());
+            AddAction(new Move {Action = ActionType.Move, X = nextPoint.X, Y = nextPoint.Y}, Priority.GatherBonus,
                       "CanGatherBonus",
                       String.Format("Bonus[{0},{1}] - {2}", currentBonuse.X, currentBonuse.Y, currentBonuse.Type));
         }
@@ -167,7 +181,20 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected override void CanLowerStance()
         {
-            
+        }
+
+        protected override void CanStayNearTeammate()
+        {
+            if (Info.Teammates.Count > 0 && Self.CanMove())
+            {
+                foreach (var teammate in Info.Teammates)
+                {
+                    if (!PathFinder.IsThisNeightbours(Self.ToPoint(), teammate.ToPoint())) continue;
+                    AddAction(new Move {Action = ActionType.EndTurn}, Priority.EndTurnNearTeammate,
+                              "CanStayNearTeammate", "");
+                    return;
+                }
+            }
         }
     }
 }

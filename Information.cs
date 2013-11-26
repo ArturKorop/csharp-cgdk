@@ -34,9 +34,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             CheckWoundedTeammates();
             CheckAvaliableBonuses();
             CheckCanKilledEnemiesImmediately();
-            //CheckCanKilledEnemiesAfterMoving();
-            //CheckNeedingMoveToAnotherPoint();
-            //CheckPrepareStanceToMaxDamage();
             CheckCanUseGrenadeEnemiesImmediately();
             CheckFightingEnemies();
             CheckDangerEnemies();
@@ -82,8 +79,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                                                                     Teammates.Select(y => new Point(y.X, y.Y)).ToList())
                                           != null && pathFinder.GetPathToPoint(x.ToPoint(), _self.ToPoint(),
                                                                                Teammates.Select(y => new Point(y.X, y.Y))
-                                                                                        .ToList()).Count <= 3
-                    /*_self.ActionPoints/_self.MoveCost()*/).ToList();
+                                                                                        .ToList()).Count <= 3/*_self.ActionPoints/_self.MoveCost()*/).ToList();
         }
 
         private void CheckCanKilledEnemiesImmediately()

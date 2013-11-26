@@ -12,6 +12,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
             Extensions.Init(game);
             BattleManager.Init(world.Troopers.First(x => x.IsTeammate));
+            BattleManager.UpdatePoint(world.Troopers.Where(x => x.IsTeammate).ToArray());
             IBehavior behavior = null;
             switch (self.Type)
             {
@@ -22,10 +23,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     behavior = new DefaultBehaviorV2(world, self, game);
                     break;
                 case TrooperType.Commander:
-                    behavior = new DefaultBehaviorV2(world, self, game);
+                    behavior = new CommanderBehavior(world, self, game);
                     break;
                 case TrooperType.Sniper:
-                    behavior = new DefaultBehaviorV2(world, self, game);
+                    behavior = new SniperBehavior(world, self, game);
                     break;
                 case TrooperType.Scout:
                     behavior = new DefaultBehaviorV2(world, self, game);
