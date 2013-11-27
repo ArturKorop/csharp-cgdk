@@ -220,6 +220,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         UseGrenade,
         UseFieldRation,
         MoveTo,
-        MoveToTargetGlobalPoint
+        MoveToTargetGlobalPoint,
+        Request
     }
 }

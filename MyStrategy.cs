@@ -12,7 +12,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
             Extensions.Init(game);
             BattleManager.Init(world.Troopers.First(x => x.IsTeammate));
-            BattleManager.UpdatePoint(world.Troopers.Where(x => x.IsTeammate).ToArray());
+            BattleManager.UpdatePoint(world.Troopers.Where(x => x.IsTeammate).ToArray(), world);
             IBehavior behavior = null;
             switch (self.Type)
             {
@@ -105,10 +105,19 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 _currentPoint = 3;
 
             CurrentPoint = Points[_currentPoint];
+            CurrentPoint = new Point(15,10);
         }
 
-        public static void UpdatePoint(Trooper[] troopers)
+        public static void UpdatePoint(Trooper[] troopers, World world)
         {
+            foreach (var player in world.Players)
+            {
+                if(player.ApproximateX != -1)
+                    CurrentPoint = new Point(player.ApproximateX, player.ApproximateY);
+
+                NeededAction = AdditionalAction.None;
+            }
+
             Step++;
             if (
                 troopers.Any(
@@ -119,25 +128,31 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 return;
             }
 
-            switch (_currentPoint)
+            if (troopers.SingleOrDefault(x => x.IsTeammate && x.Type == TrooperType.Commander) !=
+                null)
             {
-                case 0:
-                    _currentPoint = 2;
-                    break;
-                case 1:
-                    _currentPoint = 3;
-                    break;
-                case 2:
-                    _currentPoint = 0;
-                    break;
-                case 3:
-                    _currentPoint = 1;
-                    break;
+                NeededAction = AdditionalAction.Request;
             }
+            else
+            {
+                switch (_currentPoint)
+                {
+                    case 0:
+                        _currentPoint = 2;
+                        break;
+                    case 1:
+                        _currentPoint = 3;
+                        break;
+                    case 2:
+                        _currentPoint = 0;
+                        break;
+                    case 3:
+                        _currentPoint = 1;
+                        break;
+                }
 
-            //if (_currentPoint < Points.Count - 1) _currentPoint++;
-            //else _currentPoint = 0;
-            CurrentPoint = Points[_currentPoint];
+                CurrentPoint = Points[_currentPoint];
+            }
         }
     }
 }
