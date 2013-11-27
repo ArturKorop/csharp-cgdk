@@ -20,7 +20,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     behavior = new MedicBehavior(world, self, game);
                     break;
                 case TrooperType.Soldier:
-                    behavior = new DefaultBehaviorV2(world, self, game);
+                    behavior = new SoldierBehavior(world, self, game);
                     break;
                 case TrooperType.Commander:
                     behavior = new CommanderBehavior(world, self, game);

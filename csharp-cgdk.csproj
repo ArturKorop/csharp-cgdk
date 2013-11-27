@@ -71,7 +71,6 @@
   <ItemGroup>
     <Compile Include="CommanderBehavior.cs" />
     <Compile Include="DefaultBehaviorV2.cs" />
-    <Compile Include="DefaultBehavior.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="IBehavior.cs" />
     <Compile Include="Information.cs" />
@@ -98,7 +97,6 @@
     <Compile Include="Model\World.cs" />
     <Compile Include="SniperBehavior.cs" />
     <Compile Include="SoldierBehavior.cs" />
-    <Compile Include="TacticCommander.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">

@@ -78,7 +78,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected virtual void CanShoutEnemies()
         {
-            if (Info.CanShoutedEnemiesImmediately.Count == 0 || !Self.CanShout() || Info.CanKilledEnemiesImmediately.Any()) return;
+            if (Info.CanShoutedEnemiesImmediately.Count == 0 || !Self.CanShout() ||
+                Info.CanKilledEnemiesImmediately.Any()) return;
 
             var targetEnemy = Info.CanKilledEnemiesImmediately.FirstOrDefault(e => e.Type == TrooperType.FieldMedic) ??
                               Info.CanShoutedEnemiesImmediately.FirstOrDefault(e => e.Type == TrooperType.Sniper) ??
@@ -103,7 +104,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
             if (!Self.CanChangeStance() || Self.Stance == TrooperStance.Standing) return;
 
-            if (Info.VisibleEnemies.Count == 0)
+            if (Info.VisibleEnemies.Count == 0 && BattleManagerV2.GetHiddenEnemies().Count == 0)
                 AddAction(new Move {Action = ActionType.RaiseStance}, Priority.RauseStanceNotInFight, "CanRaiseStance",
                           "No visible enemies");
             else if (Info.VisibleEnemies.Any())
@@ -113,22 +114,37 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected virtual void CanLowerStance()
         {
-            if (Info.CanShoutedEnemiesImmediately.Count == 0 || !Self.CanChangeStance()) return;
+            if ((Info.CanShoutedEnemiesImmediately.Count == 0 && BattleManagerV2.GetHiddenEnemies().Count == 0) ||
+                !Self.CanChangeStance()) return;
 
             int currentDamage = Self.GetDamage(Self.Stance)*(Self.ActionPoints/Self.ShootCost);
             TrooperStance lowerStance = Self.Stance == TrooperStance.Standing
                                             ? TrooperStance.Kneeling
                                             : TrooperStance.Prone;
 
-            if (
-                !World.IsVisible(Self.ShootingRange, Self.X, Self.Y, lowerStance, Info.CanShoutedEnemiesImmediately[0].X,
-                                 Info.CanShoutedEnemiesImmediately[0].Y, Info.CanShoutedEnemiesImmediately[0].Stance))
-                return;
+            foreach (var enemy in Info.CanShoutedEnemiesImmediately)
+            {
+                if (!World.IsVisible(Self.ShootingRange, Self.X, Self.Y, lowerStance, enemy.X, enemy.Y, enemy.Stance)) continue;
+                
+                var lowerStanceDamage = Self.GetDamage(lowerStance)*
+                                        ((Self.ActionPoints - Game.StanceChangeCost)/Self.ShootCost);
+                if (lowerStanceDamage >= currentDamage)
+                    AddAction(new Move {Action = ActionType.LowerStance}, Priority.LowerStance, "CanLowerStance", "");
 
-            var lowerStanceDamage = Self.GetDamage(lowerStance)*
-                                    ((Self.ActionPoints - Game.StanceChangeCost)/Self.ShootCost);
-            if (lowerStanceDamage >= currentDamage)
-                AddAction(new Move {Action = ActionType.LowerStance}, Priority.LowerStance, "CanLowerStance", "");
+                return;
+            }
+
+            foreach (var enemy in BattleManagerV2.GetHiddenEnemies())
+            {
+                if (!World.IsVisible(Self.ShootingRange, Self.X, Self.Y, lowerStance,enemy.X, enemy.Y, enemy.Stance)) continue;
+                
+                var lowerStanceDamage = Self.GetDamage(lowerStance) *
+                                        ((Self.ActionPoints - Game.StanceChangeCost) / Self.ShootCost);
+                if (lowerStanceDamage >= currentDamage)
+                    AddAction(new Move { Action = ActionType.LowerStance }, Priority.LowerStance, "CanLowerStance", "");
+
+                return;
+            }
         }
 
         protected virtual void CanEndTurn()
@@ -174,6 +190,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         protected virtual void CanCheckBestPosition()
         {
             if (Info.VisibleEnemies.Count == 0 || Self.Stance != TrooperStance.Standing || !Self.CanMove()) return;
+            if (Self.ActionPoints < Self.MoveCost() + Self.ShootCost) return;
 
             BattleManagerV2.AddHiddenEnemies(Info.VisibleEnemies);
             CheckBestPositionCalc(null);
@@ -247,7 +264,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected virtual void CanForceMoveToTarget()
         {
-            if (BattleManager.NeededAction != AdditionalAction.MoveToTargetGlobalPoint || Self.CanMoveCarefully()) return;
+            if (BattleManager.NeededAction != AdditionalAction.MoveToTargetGlobalPoint || !Self.CanMoveCarefully())
+                return;
 
             var targetPoint = BattleManager.CurrentPoint;
             var pathFinder = new PathFinder(World.Cells);
@@ -270,7 +288,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 return;
             }
 
-            AddAction(new Move { Action = ActionType.Move, X = nextPoint.X, Y = nextPoint.Y }, Priority.ForceMoveToWayPoint,
+            AddAction(new Move {Action = ActionType.Move, X = nextPoint.X, Y = nextPoint.Y},
+                      Priority.ForceMoveToWayPoint,
                       "CanForceMoveToTarget", String.Format("WayPoint[{0},{1}]", targetPoint.X, targetPoint.Y));
         }
 
@@ -361,7 +380,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected virtual void CanShoutHiddenEnemies()
         {
-            if (Info.CanShoutedEnemiesImmediately.Any() || !Self.CanShout() || BattleManagerV2.GetHiddenEnemies().Count == 0)
+            if (Info.CanShoutedEnemiesImmediately.Any() || !Self.CanShout() ||
+                BattleManagerV2.GetHiddenEnemies().Count == 0)
                 return;
 
             foreach (var hiddenEnemy in BattleManagerV2.GetHiddenEnemies())
@@ -445,15 +465,15 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             foreach (var currentEnemy in currentEnemies)
             {
                 var temp = HiddenEnemies.SingleOrDefault(x => x.Key.Id == currentEnemy.Id).Key;
-                if(temp == null)
-                HiddenEnemies.Add(currentEnemy, 5);
+                if (temp == null)
+                    HiddenEnemies.Add(currentEnemy, 5);
             }
         }
 
         public static List<Trooper> GetHiddenEnemies()
         {
             return HiddenEnemies.Keys.ToList();
-        } 
+        }
 
         public static void Update(List<Trooper> team)
         {
