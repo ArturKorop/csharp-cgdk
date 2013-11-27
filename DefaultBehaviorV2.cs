@@ -46,6 +46,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             PossibleActions += CanReatreate;
             PossibleActions += CanShoutHiddenEnemies;
             PossibleActions += CanGoToLaggardTeammate;
+            PossibleActions += CanForceMoveToTarget;
         }
 
         public void Run(Move move)
@@ -69,6 +70,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                               Info.CanKilledEnemiesImmediately.FirstOrDefault(e => e.Type == TrooperType.Commander) ??
                               Info.CanKilledEnemiesImmediately.First();
 
+            BattleManagerV2.RemoveHiddenEnemy(targetEnemy);
             AddAction(new Move {Action = ActionType.Shoot, X = targetEnemy.X, Y = targetEnemy.Y}, Priority.Kill,
                       "CanKillEnemies",
                       String.Format("Enemy[{0}{1}] - {2}", targetEnemy.X, targetEnemy.Y, targetEnemy.Type));
@@ -76,7 +78,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected virtual void CanShoutEnemies()
         {
-            if (Info.CanShoutedEnemiesImmediately.Count == 0 || !Self.CanShout()) return;
+            if (Info.CanShoutedEnemiesImmediately.Count == 0 || !Self.CanShout() || Info.CanKilledEnemiesImmediately.Any()) return;
 
             var targetEnemy = Info.CanKilledEnemiesImmediately.FirstOrDefault(e => e.Type == TrooperType.FieldMedic) ??
                               Info.CanShoutedEnemiesImmediately.FirstOrDefault(e => e.Type == TrooperType.Sniper) ??
@@ -173,6 +175,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
             if (Info.VisibleEnemies.Count == 0 || Self.Stance != TrooperStance.Standing || !Self.CanMove()) return;
 
+            BattleManagerV2.AddHiddenEnemies(Info.VisibleEnemies);
             CheckBestPositionCalc(null);
         }
 
@@ -221,7 +224,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             var pathFinder = new PathFinder(World.Cells);
             var path = pathFinder.GetPathToNeighbourCell(new Point(targetPoint.X, targetPoint.Y), Self.ToPoint(),
                                                          GetTeammates());
-            if (path == null) return;
+            if (path == null)
+            {
+                BattleManager.NeededAction = AdditionalAction.MoveToTargetGlobalPoint;
+
+                return;
+            }
             var nextPoint = path.FirstOrDefault();
             if (nextPoint == null)
                 return;
@@ -233,9 +241,37 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 return;
             }
 
-            BattleManagerV2.HiddenEnemies.Clear();
             AddAction(new Move {Action = ActionType.Move, X = nextPoint.X, Y = nextPoint.Y}, Priority.MoveToWayPoint,
                       "CanMoveToTarget", String.Format("WayPoint[{0},{1}]", targetPoint.X, targetPoint.Y));
+        }
+
+        protected virtual void CanForceMoveToTarget()
+        {
+            if (BattleManager.NeededAction != AdditionalAction.MoveToTargetGlobalPoint || Self.CanMoveCarefully()) return;
+
+            var targetPoint = BattleManager.CurrentPoint;
+            var pathFinder = new PathFinder(World.Cells);
+            var path = pathFinder.GetPathToNeighbourCell(new Point(targetPoint.X, targetPoint.Y), Self.ToPoint(),
+                                                         GetTeammates());
+            if (path == null)
+            {
+                BattleManager.NeededAction = AdditionalAction.MoveToTargetGlobalPoint;
+
+                return;
+            }
+            var nextPoint = path.FirstOrDefault();
+            if (nextPoint == null)
+                return;
+
+            if ((nextPoint.X == Self.X && nextPoint.Y == Self.Y))
+            {
+                BattleManager.NeededAction = AdditionalAction.MoveToTargetGlobalPoint;
+
+                return;
+            }
+
+            AddAction(new Move { Action = ActionType.Move, X = nextPoint.X, Y = nextPoint.Y }, Priority.ForceMoveToWayPoint,
+                      "CanForceMoveToTarget", String.Format("WayPoint[{0},{1}]", targetPoint.X, targetPoint.Y));
         }
 
         protected virtual void CanHealSelf()
@@ -325,19 +361,20 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected virtual void CanShoutHiddenEnemies()
         {
-            if (Info.CanShoutedEnemiesImmediately.Any() || !Self.CanShout() || BattleManagerV2.HiddenEnemies.Count == 0)
+            if (Info.CanShoutedEnemiesImmediately.Any() || !Self.CanShout() || BattleManagerV2.GetHiddenEnemies().Count == 0)
                 return;
 
-            foreach (var hiddenEnemy in BattleManagerV2.HiddenEnemies)
+            foreach (var hiddenEnemy in BattleManagerV2.GetHiddenEnemies())
             {
                 if (World.IsVisible(Self.ShootingRange, Self.X, Self.Y, Self.Stance, hiddenEnemy.X, hiddenEnemy.Y,
                                     hiddenEnemy.Stance))
                 {
                     AddAction(new Move {Action = ActionType.Shoot, X = hiddenEnemy.X, Y = hiddenEnemy.Y}, Priority.Shout,
                               "CanShoutHiddenEnemies", "");
-                }
+                    BattleManagerV2.ShotInHiddenEnemies(hiddenEnemy);
 
-                return;
+                    return;
+                }
             }
         }
 
@@ -382,7 +419,41 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public static int Step;
         public static List<TrooperStatus> TeamStatus;
         public static Trooper HeadOfSquad;
-        public static List<Trooper> HiddenEnemies = new List<Trooper>();
+        private static readonly Dictionary<Trooper, int> HiddenEnemies;
+
+        static BattleManagerV2()
+        {
+            HiddenEnemies = new Dictionary<Trooper, int>();
+        }
+
+        public static void ShotInHiddenEnemies(Trooper enemy)
+        {
+            HiddenEnemies[enemy]--;
+            if (HiddenEnemies[enemy] == 0)
+                HiddenEnemies.Remove(enemy);
+        }
+
+        public static void RemoveHiddenEnemy(Trooper enemy)
+        {
+            var temp = HiddenEnemies.SingleOrDefault(x => x.Key.Id == enemy.Id).Key;
+            if (temp != null)
+                HiddenEnemies.Remove(enemy);
+        }
+
+        public static void AddHiddenEnemies(List<Trooper> currentEnemies)
+        {
+            foreach (var currentEnemy in currentEnemies)
+            {
+                var temp = HiddenEnemies.SingleOrDefault(x => x.Key.Id == currentEnemy.Id).Key;
+                if(temp == null)
+                HiddenEnemies.Add(currentEnemy, 5);
+            }
+        }
+
+        public static List<Trooper> GetHiddenEnemies()
+        {
+            return HiddenEnemies.Keys.ToList();
+        } 
 
         public static void Update(List<Trooper> team)
         {
@@ -395,8 +466,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 TeamStatus.Add(new TrooperStatus {Trooper = trooper, Status = TrooperCurrentStatus.None});
             }
 
-            HeadOfSquad = team.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
-                          team.FirstOrDefault(x => x.Type == TrooperType.Commander) ??
+            HeadOfSquad = team.FirstOrDefault(x => x.Type == TrooperType.Commander) ??
+                          team.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
+                          team.FirstOrDefault(x => x.Type == TrooperType.FieldMedic) ??
                           team[0];
         }
 
@@ -425,23 +497,24 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
     public enum Priority
     {
         Kill = 100,
-        RauseStanceNotInFight = 99,
-        UseGrenade = 98,
-        GoToLaggardTeammate = 96,
-        HealTeammate = 95,
-        MedicMoveToTeammate = 93,
-        HealSelf = 90,
-        SetBestPosition = 85,
-        Retreat = 84,
-        EatFieldRation = 83,
-        LowerStance = 80,
-        Shout = 75,
-        RaiseStanceInFight = 65,
-        WaitAll = 63,
-        GatherBonus = 60,
-        EndTurnNearTeammate = 57,
-        MoveToTeammate = 55,
-        MoveToWayPoint = 50,
+        RauseStanceNotInFight = 95,
+        UseGrenade = 90,
+        ForceMoveToWayPoint = 85,
+        GoToLaggardTeammate = 80,
+        HealTeammate = 75,
+        MedicMoveToTeammate = 70,
+        HealSelf = 65,
+        SetBestPosition = 60,
+        Retreat = 55,
+        EatFieldRation = 50,
+        LowerStance = 40,
+        Shout = 35,
+        RaiseStanceInFight = 30,
+        WaitAll = 25,
+        GatherBonus = 20,
+        EndTurnNearTeammate = 15,
+        MoveToTeammate = 10,
+        MoveToWayPoint = 5,
         EndTurn = 0,
     }
 

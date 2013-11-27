@@ -12,7 +12,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected override void CanReatreate()
         {
-            /*if(Info.VisibleEnemies.Count == 0 || !Self.CanMove() || Info.FightingEnemies.Count > 0) return;
+            if(Info.VisibleEnemies.Count == 0 || !Self.CanMove() || Info.FightingEnemies.Count > Info.DangerEnemies.Count) return;
 
             if (Self.ActionPoints < Self.MoveCost() + Self.ShootCost)
             {
@@ -21,8 +21,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 if(point == null) return;
 
                 AddAction(new Move { Action = ActionType.Move, X = point.X, Y = point.Y }, Priority.Retreat, "CanReatreate", "");
-                BattleManagerV2.HiddenEnemies.AddRange(Info.VisibleEnemies);
-            }*/
+                BattleManagerV2.AddHiddenEnemies(Info.VisibleEnemies);
+            }
         }
     }
 }

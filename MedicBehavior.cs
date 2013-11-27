@@ -100,14 +100,16 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
             if (Info.Teammates.Count > 0 && Self.CanMove())
             {
-                var targetTemamate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Commander) ??
+                var targetTemamate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
                                      Info.Teammates[0];
-                var targetOtherTeammate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
+                var targetOtherTeammate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Commander) ??
                                       Info.Teammates[0];
                 var pathFinder = new PathFinder(World.Cells);
                 var path = pathFinder.GetPathToNeighbourCell(new Point(targetTemamate.X, targetTemamate.Y),
                                                              new Point(Self.X, Self.Y),
                                                              GetTeammates());
+                if (path == null) return;
+                
                 if (path.Count > Self.ActionPoints/Self.MoveCost())
                 {
                     pathFinder = new PathFinder(World.Cells);
