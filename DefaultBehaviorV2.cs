@@ -48,6 +48,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             PossibleActions += CanGoToLaggardTeammate;
             PossibleActions += CanForceMoveToTarget;
             PossibleActions += CanCommanderRequestEnemyDisposition;
+            PossibleActions += CanCheckBestPositionForShoutHiddenEnemies;
         }
 
         public void Run(Move move)
@@ -61,7 +62,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             move.X = currentMove.Move.X;
             move.Y = currentMove.Move.Y;
 
-            if (BattleManager.Step == 118)
+            if (BattleManager.Step == 353)
             {
                 Console.WriteLine("---------------------");
             }
@@ -113,7 +114,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             if (!Self.CanChangeStance() || Self.Stance == TrooperStance.Standing ||
                 Info.CanShoutedEnemiesImmediately.Any()) return;
 
-            if (Info.VisibleEnemies.Count == 0 && BattleManagerV2.GetHiddenEnemies().Count == 0)
+            if (Info.VisibleEnemies.Count == 0)
                 AddAction(new Move {Action = ActionType.RaiseStance}, Priority.RauseStanceNotInFight, "CanRaiseStance",
                           "No visible enemies");
             else if (Info.VisibleEnemies.Any())
@@ -206,6 +207,34 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             if (Self.ActionPoints < Self.MoveCost() + Self.ShootCost) return;
 
             CheckBestPositionCalc(null);
+        }
+
+        protected virtual void CanCheckBestPositionForShoutHiddenEnemies()
+        {
+            if (BattleManagerV2.GetHiddenEnemies().Count == 0 || Self.Stance != TrooperStance.Standing || !Self.CanMove() ||
+                Info.CanKilledEnemiesImmediately.Any()) return;
+
+            if (Self.ActionPoints < Self.MoveCost() + Self.ShootCost) return;
+
+            var avaliablePoints = new List<Point>();
+            foreach (var visibleEnemy in BattleManagerV2.GetHiddenEnemies())
+            {
+                var teammatesAndForbiddenPoints = GetTeammates();
+                avaliablePoints.AddRange(CurrentPathFinder.AvaliablePositionToShout(Self, visibleEnemy, World,
+                                                                                    teammatesAndForbiddenPoints));
+            }
+
+            if (avaliablePoints.Count == 0) return;
+            if (avaliablePoints.Contains(Self.ToPoint())) return;
+
+            var minPath =
+                avaliablePoints.Select(x => CurrentPathFinder.GetPathToPoint(x, Self.ToPoint(), GetTeammates()))
+                               .OrderBy(x => x.Count)
+                               .First();
+            if (minPath.Count == 0) return;
+
+            AddAction(new Move {Action = ActionType.Move, X = minPath.First().X, Y = minPath.First().Y},
+                      Priority.SetBestPositionForHiddenEnemies, "CheckBestPositionCalc", "");
         }
 
         protected virtual void CanCheckPositionForTeammates()
@@ -460,7 +489,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
     public static class BattleManagerV2
     {
         public static int Step;
-        public static List<TrooperStatus> TeamStatus;
         public static Trooper HeadOfSquad;
         private static readonly Dictionary<Trooper, int> HiddenEnemies = new Dictionary<Trooper, int>();
 
@@ -496,25 +524,12 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public static void Update(List<Trooper> team)
         {
             Step++;
-            if (TeamStatus == null)
-                TeamStatus = new List<TrooperStatus>();
-
-            foreach (var trooper in team)
-            {
-                TeamStatus.Add(new TrooperStatus {Trooper = trooper, Status = TrooperCurrentStatus.None});
-            }
-
             HeadOfSquad = team.FirstOrDefault(x => x.Type == TrooperType.Commander) ??
                           team.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
                           team.FirstOrDefault(x => x.Type == TrooperType.FieldMedic) ??
                           team[0];
         }
 
-        public static void UpdateTrooper(Trooper self, TrooperCurrentStatus status)
-        {
-            var trooper = TeamStatus.First(x => x.Trooper.Id == self.Id);
-            trooper.Status = status;
-        }
     }
 
     public class TrooperStatus
@@ -549,6 +564,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         LowerStance = 40,
         Shout = 35,
         RaiseStanceInFight = 30,
+        SetBestPositionForHiddenEnemies = 27,
         WaitAll = 25,
         GatherBonus = 20,
         EndTurnNearTeammate = 15,

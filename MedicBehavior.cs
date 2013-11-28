@@ -98,6 +98,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected override void CanMoveToTeammate()
         {
+            BattleManagerV2.AddHiddenEnemies(Info.VisibleEnemies);
             if (Info.Teammates.Count > 0 && Self.CanMove())
             {
                 var targetTemamate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
@@ -197,6 +198,10 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     return;
                 }
             }
+        }
+
+        protected override void CanCheckBestPositionForShoutHiddenEnemies()
+        {
         }
     }
 }

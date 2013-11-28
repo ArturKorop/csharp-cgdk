@@ -35,7 +35,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
             if(behavior == null) return;
             behavior.Run(move);
-            var text = String.Format("Step[{8}]: {7}  -  ID: {0}, Type: {1}, Action: {2}, [{3},{4}], AP: {5}, HP: {6}   AddInfo - {9}",
+            var text = String.Format("Step[{8,3}]: {7,20}  -  ID: {0,3}, Type: {1,12}, Action: {2,12}, [{3,2},{4,2}], AP: {5,2}, HP: {6,3}   AddInfo - {9}",
                                      self.Id,
                                      self.Type, move.Action, move.X, move.Y, self.ActionPoints, self.Hitpoints,
                                      behavior.StepInfo, BattleManager.Step, behavior.AddInfo);
