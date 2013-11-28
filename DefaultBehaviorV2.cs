@@ -62,7 +62,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             move.X = currentMove.Move.X;
             move.Y = currentMove.Move.Y;
 
-            if (BattleManager.Step == 353)
+            if (BattleManager.Step == 60)
             {
                 Console.WriteLine("---------------------");
             }
@@ -365,20 +365,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     }, Priority.HealTeammate, "CanHealTeammate", "");
         }
 
-        protected virtual void CanMoveToTeammate()
-        {
-            if (!Self.CanMove() || Info.Teammates.Count == 0 || Self.Id == BattleManagerV2.HeadOfSquad.Id) return;
-
-            var path = CurrentPathFinder.GetPathToNeighbourCell(BattleManagerV2.HeadOfSquad.ToPoint(), Self.ToPoint(),
-                                                                GetTeammates());
-            if (path.Count == 0) return;
-
-            var nextPoint = path.First();
-            AddAction(new Move {Action = ActionType.Move, X = nextPoint.X, Y = nextPoint.Y}, Priority.MoveToTeammate,
-                      "CanMoveToTeammate",
-                      String.Format("Teammate - [{0},{1}]", path.Last().X, path.Last().Y));
-        }
-
         protected virtual void CanWaitAll()
         {
             if (!Self.CanMove() || Info.Teammates.Count == 0 || Self.Id != BattleManagerV2.HeadOfSquad.Id ||
@@ -389,8 +375,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     x => CurrentPathFinder.GetPathToNeighbourCell(Self.ToPoint(), x.ToPoint(), new List<Point>()))
                     .ToList();
 
-            var maxPath = pathes.Max(x => x.Count);
-            if (maxPath >= 4)
+            var maxPath = pathes.Min(x => x.Count);
+            if (maxPath >= 2)
                 AddAction(new Move {Action = ActionType.EndTurn}, Priority.WaitAll, "CanWaitAll", "");
         }
 
@@ -413,14 +399,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             }
         }
 
-        protected virtual void CanStayNearTeammate()
-        {
-        }
-
-        protected virtual void CanReatreate()
-        {
-        }
-
         protected virtual void CanShoutHiddenEnemies()
         {
             if (Info.CanShoutedEnemiesImmediately.Any() || !Self.CanShout() ||
@@ -432,7 +410,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 if (World.IsVisible(Self.ShootingRange, Self.X, Self.Y, Self.Stance, hiddenEnemy.X, hiddenEnemy.Y,
                                     hiddenEnemy.Stance))
                 {
-                    AddAction(new Move {Action = ActionType.Shoot, X = hiddenEnemy.X, Y = hiddenEnemy.Y}, Priority.Shout,
+                    AddAction(new Move { Action = ActionType.Shoot, X = hiddenEnemy.X, Y = hiddenEnemy.Y }, Priority.Shout,
                               "CanShoutHiddenEnemies", "");
                     BattleManagerV2.ShotInHiddenEnemies(hiddenEnemy);
 
@@ -447,6 +425,19 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
             AddAction(new Move {Action = ActionType.RequestEnemyDisposition}, Priority.RequestEnemyDisposition,
                       "CanCommanderRequestEnemyDisposition", "");
+        }
+
+        protected virtual void CanStayNearTeammate()
+        {
+        }
+
+        protected virtual void CanReatreate()
+        {
+        }
+
+        protected virtual void CanMoveToTeammate()
+        {
+
         }
 
         protected void AddAction(Move move, Priority priority, string message, string addInfo)
