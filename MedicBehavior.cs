@@ -13,6 +13,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected override void CanHealSelf()
         {
+            if (Info.Teammates.Count == 0) return;
+
             var pathFinder = new PathFinder(World.Cells);
             if (Self.CanUseMedikit() && Info.WoundedTeammates.Count(x => x.Hitpoints <= 60) > 0 &&
                 Info.VisibleEnemies.Count > 0 && Self.CanMove())
