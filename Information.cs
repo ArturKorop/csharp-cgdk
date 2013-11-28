@@ -15,6 +15,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         public List<Trooper> FightingEnemies { get; private set; }
         public List<Trooper> DangerEnemies { get; private set; }
         public List<Trooper> CanShoutedEnemiesImmediately { get; private set; }
+        public List<Trooper> CanShoutedHiddenEnemiesImmediately { get; private set; }
         public List<Trooper> CanKilledEnemiesImmediately { get; private set; }
         public List<Trooper> CanKilledEnemiesAfterMoving { get; private set; }
         public List<Trooper> CanUseGrenadeEnemiesImmediately { get; private set; }
@@ -37,6 +38,19 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             CheckCanUseGrenadeEnemiesImmediately();
             CheckFightingEnemies();
             CheckDangerEnemies();
+            CheckShouteHiddenEnemies();
+        }
+
+        private void CheckShouteHiddenEnemies()
+        {
+            CanShoutedHiddenEnemiesImmediately = new List<Trooper>();
+
+            if(BattleManagerV2.GetHiddenEnemies().Count == 0) return;
+
+            CanShoutedHiddenEnemiesImmediately =
+                BattleManagerV2.GetHiddenEnemies().Where(
+                    x =>
+                    _world.IsVisible(_self.ShootingRange, _self.X, _self.Y, _self.Stance, x.X, x.Y, x.Stance)).ToList();
         }
 
         private void CheckVisibleEnemies()

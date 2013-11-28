@@ -98,6 +98,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected override void CanMoveToTeammate()
         {
+            if (BattleManagerV2.HeadOfSquad.Id == Self.Id) return;
+
             BattleManagerV2.AddHiddenEnemies(Info.VisibleEnemies);
             if (Info.Teammates.Count <= 0 || !Self.CanMove() || BattleManagerV2.HeadOfSquad.Id == Self.Id) return;
 

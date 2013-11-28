@@ -137,7 +137,6 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
             if (self.X == 29 || self.X == 0 || self.Y == 0 || self.Y == 19) return null;
 
-            var tempMap = CopyDeepMap();
             var avaliableNeighbours = new List<Point>();
             int x = self.X - 1;
             int y = self.Y;
@@ -175,10 +174,19 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     }
                 }
             }
+            if (warningPoints.Count == 0) return null;
 
             var safePoints = avaliableNeighbours.Where(an => !warningPoints.Contains(an)).ToList();
+            if (safePoints.Count == 0) return null;
 
-            return !safePoints.Any() ? null : safePoints.First();
+            var minPath = teammates.Select(t => (Math.Abs(self.X - t.X) + Math.Abs(self.Y - t.Y))).Min();
+            var teammate = teammates.First(t => (Math.Abs(self.X - t.X) + Math.Abs(self.Y - t.Y)) == minPath);
+            if (teammate == null) return null;
+
+            var minPathToTeammateFromNewPosition = safePoints.Select(p => (Math.Abs(teammate.X - p.X) + Math.Abs(teammate.Y - p.Y))).Min();
+            var minimumSafePoint = safePoints.First(p => (Math.Abs(teammate.X - p.X) + Math.Abs(teammate.Y - p.Y)) == minPathToTeammateFromNewPosition);
+
+            return minimumSafePoint;
         } 
 
         public static bool IsThisNeightbours(Point self, Point target)
@@ -192,7 +200,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             if (allNeighbours != null)
                 neighbours.AddRange(allNeighbours);
 
-            neighbours.Sort((x, y) => x.Cost.CompareTo(y.Cost));
+            neighbours.Sort((x, y) => (x.Cost).CompareTo(y.Cost));
             foreach (var neighbour in neighbours.Where(x => x.Value != FieldStatus.Searched))
             {
                 if (neighbour.Value != FieldStatus.Target)

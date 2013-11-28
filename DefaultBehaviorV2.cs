@@ -62,7 +62,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             move.X = currentMove.Move.X;
             move.Y = currentMove.Move.Y;
 
-            if (BattleManager.Step == 60)
+            if (BattleManager.Step == 54)
             {
                 Console.WriteLine("---------------------");
             }
@@ -112,7 +112,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         protected virtual void CanRaiseStance()
         {
             if (!Self.CanChangeStance() || Self.Stance == TrooperStance.Standing ||
-                Info.CanShoutedEnemiesImmediately.Any()) return;
+                Info.CanShoutedEnemiesImmediately.Any() || Info.CanShoutedHiddenEnemiesImmediately.Any()) return;
 
             if (Info.VisibleEnemies.Count == 0)
                 AddAction(new Move {Action = ActionType.RaiseStance}, Priority.RauseStanceNotInFight, "CanRaiseStance",
@@ -204,7 +204,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             if (Info.VisibleEnemies.Count == 0 || Self.Stance != TrooperStance.Standing || !Self.CanMove() ||
                 Info.CanKilledEnemiesImmediately.Any()) return;
 
-            if (Self.ActionPoints < Self.MoveCost() + Self.ShootCost) return;
+            if (Self.ActionPoints < Self.MoveCost() + Self.ShootCost && Self.Type == TrooperType.Commander) return;
 
             CheckBestPositionCalc(null);
         }
@@ -384,15 +384,19 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         {
             if (!Self.CanMove() || Info.Teammates.Count == 0 || Self.Id != BattleManagerV2.HeadOfSquad.Id) return;
 
-            var pathes =
+            var pathesWithoutTeammates =
                 Info.Teammates.Select(
                     x => CurrentPathFinder.GetPathToNeighbourCell(x.ToPoint(), Self.ToPoint(), new List<Point>()))
                     .ToList();
 
-            var maxPath = pathes.Max(x => x.Count);
-            if (maxPath > 5)
+            var maxPath = pathesWithoutTeammates.Max(x => x.Count);
+            if (maxPath > 17)
             {
-                var currentPath = pathes.First(x => x.Count == maxPath);
+                var pathesWithTeammates = Info.Teammates.Select(
+                    x => CurrentPathFinder.GetPathToNeighbourCell(x.ToPoint(), Self.ToPoint(), GetTeammates()))
+                    .ToList();
+                var maxPathWithTeammates = pathesWithTeammates.Max(x => x.Count);
+                var currentPath = pathesWithTeammates.First(x => x.Count == maxPathWithTeammates);
                 var nextPoint = currentPath.First();
                 AddAction(new Move {Action = ActionType.Move, X = nextPoint.X, Y = nextPoint.Y},
                           Priority.GoToLaggardTeammate, "CanGoToLaggardTeammate", "");
