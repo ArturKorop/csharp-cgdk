@@ -67,7 +67,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             set
             {
                 _neededAction = value;
-                _countOfNeededAciton = 10;
+                if(_neededAction == AdditionalAction.MoveToTargetGlobalPoint)
+                    _countOfNeededAciton = 20;
             }
         }
 
@@ -115,7 +116,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 if(player.ApproximateX != -1)
                     CurrentPoint = new Point(player.ApproximateX, player.ApproximateY);
 
-                NeededAction = AdditionalAction.None;
+                _neededAction = _neededAction == AdditionalAction.Request ? AdditionalAction.None : _neededAction;
             }
 
             Step++;

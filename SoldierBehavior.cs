@@ -16,6 +16,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
             var path = CurrentPathFinder.GetPathToNeighbourCell(BattleManagerV2.HeadOfSquad.ToPoint(), Self.ToPoint(),
                                                                 GetTeammates());
+            if (path == null) return;
             if (path.Count == 0) return;
 
             var nextPoint = path.First();

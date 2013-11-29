@@ -25,7 +25,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                                                                  new Point(Self.X, Self.Y),
                                                                  Info.Teammates.Select(x => new Point(x.X, x.Y))
                                                                      .ToList());
-                    if (path.Count == 0)
+                    if (PathFinder.IsThisNeightbours(Self.ToPoint(), teammate.ToPoint()))
                     {
                         AddAction(new Move {Action = ActionType.UseMedikit, X = teammate.X, Y = teammate.Y},
                                   Priority.HealTeammate, "CanHealTeammate",

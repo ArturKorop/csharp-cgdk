@@ -29,7 +29,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
             PossibleActions += CanKillEnemies;
             PossibleActions += CanShoutEnemies;
-            PossibleActions += CanEatFieldRation;
+            PossibleActions += CanEatFieldRationForShouting;
             PossibleActions += CanRaiseStance;
             PossibleActions += CanLowerStance;
             PossibleActions += CanEndTurn;
@@ -49,6 +49,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             PossibleActions += CanForceMoveToTarget;
             PossibleActions += CanCommanderRequestEnemyDisposition;
             PossibleActions += CanCheckBestPositionForShoutHiddenEnemies;
+            PossibleActions += CanUseGrenadeAfterMoving;
+            PossibleActions += CanEatFieldRationForUsingGrenade;
         }
 
         public void Run(Move move)
@@ -100,13 +102,18 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                                     targetEnemy.Type, targetEnemy.Hitpoints, Self.Damage));
         }
 
-        protected virtual void CanEatFieldRation()
+        protected virtual void CanEatFieldRationForShouting()
         {
-            if (Self.NeedFieldRation() && Info.CanShoutedEnemiesImmediately.Any())
-            {
-                AddAction(new Move {Action = ActionType.EatFieldRation}, Priority.EatFieldRation, "CanEatFieldRation",
-                          String.Format("CurrentAP: {0}", Self.ActionPoints));
-            }
+            if (!Self.NeedFieldRation() || !Info.CanShoutedEnemiesImmediately.Any()) return;
+
+            var currentShoutCount = Self.ActionPoints/Self.ShootCost;
+            var afterFieldRationShoutCount = (Self.ActionPoints - Game.FieldRationEatCost +
+                                              Game.FieldRationBonusActionPoints)/Self.ShootCost;
+
+            if(currentShoutCount <= afterFieldRationShoutCount) return;
+
+            AddAction(new Move {Action = ActionType.EatFieldRation}, Priority.EatFieldRation, "CanEatFieldRationForShouting",
+                      String.Format("CurrentAP: {0}", Self.ActionPoints));
         }
 
         protected virtual void CanRaiseStance()
@@ -192,11 +199,14 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             if (!Info.CanUseGrenadeEnemiesImmediately.Any() || !Self.CanUseGrenadeImmediately()) return;
 
             var targetEnemy =
-                Info.CanUseGrenadeEnemiesImmediately.FirstOrDefault(x => x.Type == TrooperType.FieldMedic) ??
+                Info.CanUseGrenadeEnemiesImmediately.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
+                Info.CanUseGrenadeEnemiesImmediately.FirstOrDefault(x => x.Type == TrooperType.Sniper) ??
+                Info.CanUseGrenadeEnemiesImmediately.FirstOrDefault(x => x.Type == TrooperType.Commander) ??
                 Info.CanUseGrenadeEnemiesImmediately.First();
             AddAction(new Move {Action = ActionType.ThrowGrenade, X = targetEnemy.X, Y = targetEnemy.Y},
                       Priority.UseGrenade, "CanUseGrenade",
-                      String.Format("Enemy[{0}{1}] - {2}", targetEnemy.X, targetEnemy.Y, targetEnemy.Type));
+                      String.Format("Enemy[{0}{1}] - {2}, HP: {3}", targetEnemy.X, targetEnemy.Y,
+                                    targetEnemy.Type, targetEnemy.Hitpoints));
         }
 
         protected virtual void CanCheckBestPosition()
@@ -234,7 +244,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             if (minPath.Count == 0) return;
 
             AddAction(new Move {Action = ActionType.Move, X = minPath.First().X, Y = minPath.First().Y},
-                      Priority.SetBestPositionForHiddenEnemies, "CheckBestPositionCalc", "");
+                      Priority.SetBestPositionForHiddenEnemies, "CanCheckBestPositionForShoutHiddenEnemies", "");
         }
 
         protected virtual void CanCheckPositionForTeammates()
@@ -285,6 +295,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             if (path == null)
             {
                 BattleManager.NeededAction = AdditionalAction.MoveToTargetGlobalPoint;
+                Console.WriteLine("path == null -> AdditionalAction.MoveToTargetGlobalPoint");
 
                 return;
             }
@@ -295,6 +306,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             if ((nextPoint.X == Self.X && nextPoint.Y == Self.Y))
             {
                 BattleManager.NeededAction = AdditionalAction.MoveToTargetGlobalPoint;
+                Console.WriteLine("path == self -> AdditionalAction.MoveToTargetGlobalPoint");
 
                 return;
             }
@@ -305,8 +317,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         protected virtual void CanForceMoveToTarget()
         {
-            if (BattleManager.NeededAction != AdditionalAction.MoveToTargetGlobalPoint || !Self.CanMoveCarefully() ||
-                BattleManager.CurrentPoint == null)
+            if (BattleManager.NeededAction != AdditionalAction.MoveToTargetGlobalPoint || !Self.CanMove() ||
+                BattleManager.CurrentPoint == null || Info.CanShoutedEnemiesImmediately.Any())
                 return;
 
             var targetPoint = BattleManager.CurrentPoint;
@@ -444,6 +456,33 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         }
 
+        protected virtual void CanEatFieldRationForUsingGrenade()
+        {
+            if (!Self.CanUseGrenadeWithFieldRation() || Info.CanUseGrenadeEnemiesImmediately.Count == 0 || Self.CanUseGrenadeImmediately()) return;
+
+            AddAction(new Move { Action = ActionType.EatFieldRation }, Priority.EatFieldRationForUsingGrenade, "CanEatFieldRationForUsingGrenade",
+                      String.Format("CurrentAP: {0}", Self.ActionPoints));
+        }
+
+        protected virtual void CanUseGrenadeAfterMoving()
+        {
+            if(!Self.CanUseGrenadeImmediately() || Info.VisibleEnemies.Count == 0 || Info.CanKilledEnemiesImmediately.Any()) return;
+
+            var possibleStepToEnemy = (Self.ActionPoints - Game.GrenadeThrowCost)/Self.MoveCost();
+            if (possibleStepToEnemy == 0) return;
+
+            var nextPoint = CurrentPathFinder.GetPointToUseGrenade((int)Game.GrenadeThrowRange, World, Self.ToPoint(), possibleStepToEnemy, Info.VisibleEnemies, GetTeammates());
+            if (nextPoint == null) return;
+
+            var path = CurrentPathFinder.GetPathToPoint(nextPoint, Self.ToPoint(), GetTeammates());
+            if (path == null) return;
+
+            if (path.Count == 0) return;
+
+            AddAction(new Move { Action = ActionType.Move, X = path.First().X, Y = path.First().Y },
+                          Priority.MoveToUseGrenade, "CanUseGrenadeAfterMoving", "");
+        }
+
         protected void AddAction(Move move, Priority priority, string message, string addInfo)
         {
             PriorityActions.Add(new MoveAction(move, (int) priority) {Message = message, AdditionalInfo = addInfo});
@@ -547,9 +586,11 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         Kill = 100,
         RauseStanceNotInFight = 95,
         UseGrenade = 90,
+        MoveToUseGrenade = 89,
         RequestEnemyDisposition = 87,
         ForceMoveToWayPoint = 85,
         GoToLaggardTeammate = 80,
+        EatFieldRationForUsingGrenade = 77,
         HealTeammate = 75,
         HealSelf = 65,
         SetBestPosition = 60,

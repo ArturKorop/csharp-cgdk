@@ -70,7 +70,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             path.Reverse();
 
             return path;
-        } 
+        }
 
         public Point GetNextPoint(int currentX, int currentY, int targetX, int targetY, List<Point> teammates)
         {
@@ -124,7 +124,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     {
                         var tempPoint = new Point(i, j);
                         var path = GetPathToPoint(tempPoint, self.ToPoint(), teammates);
-                        if (path != null && path.Count <= (self.ActionPoints / self.MoveCost()))
+                        if (path != null && path.Count <= (self.ActionPoints/self.MoveCost()))
                             points.Add(new Point(i, j));
                     }
                 }
@@ -140,23 +140,23 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             var avaliableNeighbours = new List<Point>();
             int x = self.X - 1;
             int y = self.Y;
-            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X - 1 && t.Y == self.Y))
-                avaliableNeighbours.Add(new Point(x,y));
+            if (x >= 0 && world.Cells[x][y] == CellType.Free && !teammates.Any(t => t.X == self.X - 1 && t.Y == self.Y))
+                avaliableNeighbours.Add(new Point(x, y));
 
             x = self.X + 1;
             y = self.Y;
-            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X + 1 && t.Y == self.Y))
-                avaliableNeighbours.Add(new Point(x,y));
+            if (x < 30 && world.Cells[x][y] == CellType.Free && !teammates.Any(t => t.X == self.X + 1 && t.Y == self.Y))
+                avaliableNeighbours.Add(new Point(x, y));
 
             x = self.X;
             y = self.Y - 1;
-            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X && t.Y == self.Y - 1))
-                avaliableNeighbours.Add(new Point(x,y));
+            if (y >= 0 && world.Cells[x][y] == CellType.Free && !teammates.Any(t => t.X == self.X && t.Y == self.Y - 1))
+                avaliableNeighbours.Add(new Point(x, y));
 
             x = self.X;
             y = self.Y + 1;
-            if(world.Cells[x][y] == CellType.Free && !teammates.Any(t=>t.X == self.X && t.Y == self.Y + 1))
-                avaliableNeighbours.Add(new Point(x,y));
+            if (y < 20 && world.Cells[x][y] == CellType.Free && !teammates.Any(t => t.X == self.X && t.Y == self.Y + 1))
+                avaliableNeighbours.Add(new Point(x, y));
 
             if (avaliableNeighbours.Count == 0) return null;
 
@@ -169,7 +169,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                     {
                         if (world.IsVisible(enemy.ShootingRange, enemy.X, enemy.Y, enemy.Stance, i, j, self.Stance))
                         {
-                            warningPoints.Add(new Point(i,j));
+                            warningPoints.Add(new Point(i, j));
                         }
                     }
                 }
@@ -183,11 +183,14 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             var teammate = teammates.First(t => (Math.Abs(self.X - t.X) + Math.Abs(self.Y - t.Y)) == minPath);
             if (teammate == null) return null;
 
-            var minPathToTeammateFromNewPosition = safePoints.Select(p => (Math.Abs(teammate.X - p.X) + Math.Abs(teammate.Y - p.Y))).Min();
-            var minimumSafePoint = safePoints.First(p => (Math.Abs(teammate.X - p.X) + Math.Abs(teammate.Y - p.Y)) == minPathToTeammateFromNewPosition);
+            var minPathToTeammateFromNewPosition =
+                safePoints.Select(p => (Math.Abs(teammate.X - p.X) + Math.Abs(teammate.Y - p.Y))).Min();
+            var minimumSafePoint =
+                safePoints.First(
+                    p => (Math.Abs(teammate.X - p.X) + Math.Abs(teammate.Y - p.Y)) == minPathToTeammateFromNewPosition);
 
             return minimumSafePoint;
-        } 
+        }
 
         public static bool IsThisNeightbours(Point self, Point target)
         {
@@ -216,7 +219,8 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             if (tempAllNeighbours == null)
                 return null;
 
-            var minCost = tempAllNeighbours.Select(y => Math.Abs(y.X - _map.Target.X) + Math.Abs(y.Y - _map.Target.Y)).Min();
+            var minCost =
+                tempAllNeighbours.Select(y => Math.Abs(y.X - _map.Target.X) + Math.Abs(y.Y - _map.Target.Y)).Min();
             return tempAllNeighbours.First(x => Math.Abs(x.X - _map.Target.X) + Math.Abs(x.Y - _map.Target.Y) == minCost);
         }
 
@@ -239,17 +243,102 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
 
         private Point[,] CopyDeepMap()
         {
-            var tempMapField = new Point[30, 20];
+            var tempMapField = new Point[30,20];
             for (int i = 0; i < 30; i++)
             {
                 for (int j = 0; j < 20; j++)
                 {
-                    var temp = _mapField[i,j];
+                    var temp = _mapField[i, j];
                     tempMapField[i, j] = new Point(temp.X, temp.Y) {Value = temp.Value};
                 }
             }
 
             return tempMapField;
+        }
+
+        public Point GetPointToUseGrenade(int greanadeRange, World world, Point self, int possibleStepToEnemy,
+                                          List<Trooper> visibleEnemies, List<Point> teammates)
+        {
+            var avaliableNeighbours = new List<Point>();
+            if (possibleStepToEnemy == 1)
+            {
+                int x = self.X - 1;
+                int y = self.Y;
+                if (x >= 0 && world.Cells[x][y] == CellType.Free && !teammates.Any(t => t.X == self.X - 1 && t.Y == self.Y))
+                    avaliableNeighbours.Add(new Point(x, y));
+
+                x = self.X + 1;
+                y = self.Y;
+                if (x < 30 && world.Cells[x][y] == CellType.Free && !teammates.Any(t => t.X == self.X + 1 && t.Y == self.Y))
+                    avaliableNeighbours.Add(new Point(x, y));
+
+                x = self.X;
+                y = self.Y - 1;
+                if (y >= 0 && world.Cells[x][y] == CellType.Free && !teammates.Any(t => t.X == self.X && t.Y == self.Y - 1))
+                    avaliableNeighbours.Add(new Point(x, y));
+
+                x = self.X;
+                y = self.Y + 1;
+                if (y < 20 && world.Cells[x][y] == CellType.Free && !teammates.Any(t => t.X == self.X && t.Y == self.Y + 1))
+                    avaliableNeighbours.Add(new Point(x, y));
+
+                if (avaliableNeighbours.Count == 0) return null;
+            }
+
+           foreach (var avaliableNeighbour in from avaliableNeighbour in avaliableNeighbours
+                                               from visibleEnemy in visibleEnemies
+                                               where
+                                                   world.IsVisible(greanadeRange, avaliableNeighbour.X,
+                                                                   avaliableNeighbour.Y,
+                                                                   TrooperStance.Standing, visibleEnemy.X,
+                                                                   visibleEnemy.Y,
+                                                                   TrooperStance.Standing)
+                                               select avaliableNeighbour)
+            {
+                return avaliableNeighbour;
+            }
+
+            if (possibleStepToEnemy == 2)
+            {
+                int x = self.X - possibleStepToEnemy;
+                int y = self.Y;
+                if (x >= 0 && world.Cells[x][y] == CellType.Free && !teammates.Any(t => t.X == x && t.Y == y))
+                    avaliableNeighbours.Add(new Point(x, y));
+
+                x = self.X + possibleStepToEnemy;
+                y = self.Y;
+                if (x < 30 && world.Cells[x][y] == CellType.Free && !teammates.Any(t => t.X == x && t.Y == y))
+                    avaliableNeighbours.Add(new Point(x, y));
+
+                x = self.X;
+                y = self.Y - possibleStepToEnemy;
+                if (y >= 0 && world.Cells[x][y] == CellType.Free && !teammates.Any(t => t.X == x && t.Y == y))
+                    avaliableNeighbours.Add(new Point(x, y));
+
+                x = self.X;
+                y = self.Y + possibleStepToEnemy;
+                if (y < 20 && world.Cells[x][y] == CellType.Free && !teammates.Any(t => t.X == x && t.Y == y))
+                    avaliableNeighbours.Add(new Point(x, y));
+
+                if (avaliableNeighbours.Count == 0) return null;
+            }
+
+            if (!avaliableNeighbours.Any()) return null;
+
+            foreach (var avaliableNeighbour in from avaliableNeighbour in avaliableNeighbours
+                                               from visibleEnemy in visibleEnemies
+                                               where
+                                                   world.IsVisible(greanadeRange, avaliableNeighbour.X,
+                                                                   avaliableNeighbour.Y,
+                                                                   TrooperStance.Standing, visibleEnemy.X,
+                                                                   visibleEnemy.Y,
+                                                                   TrooperStance.Standing)
+                                               select avaliableNeighbour)
+            {
+                return avaliableNeighbour;
+            }
+
+            return null;
         }
     }
 
@@ -284,7 +373,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         private readonly Point[,] _map;
         private readonly int _width;
         private readonly int _height;
-        public Point Target { get;private set; }
+        public Point Target { get; private set; }
 
         public Map(Point[,] map, Point target)
         {
