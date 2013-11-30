@@ -102,7 +102,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             var tempCanShoutEnemies = _world.Troopers.Where(
                 x =>
                 !x.IsTeammate &&
-                _world.IsVisible(_self.ShootingRange, _self.X, _self.Y, TrooperStance.Kneeling, x.X, x.Y, x.Stance))
+                _world.IsVisible(_self.ShootingRange, _self.X, _self.Y, _self.Stance, x.X, x.Y, x.Stance))
                                             .ToList();
             CanKilledEnemiesImmediately = tempCanShoutEnemies.Where(x => (x.Hitpoints <= defaultDmg
                                                                          )).ToList();

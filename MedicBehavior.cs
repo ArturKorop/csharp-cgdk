@@ -105,9 +105,9 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
             BattleManagerV2.AddHiddenEnemies(Info.VisibleEnemies);
             if (Info.Teammates.Count <= 0 || !Self.CanMove() || BattleManagerV2.HeadOfSquad.Id == Self.Id) return;
 
-            var targetTemamate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
+            var targetTemamate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Commander) ??
                                  Info.Teammates[0];
-            var targetOtherTeammate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Commander) ??
+            var targetOtherTeammate = Info.Teammates.FirstOrDefault(x => x.Type == TrooperType.Soldier) ??
                                       Info.Teammates[0];
             var pathFinder = new PathFinder(World.Cells);
             var path = pathFinder.GetPathToNeighbourCell(new Point(targetTemamate.X, targetTemamate.Y),

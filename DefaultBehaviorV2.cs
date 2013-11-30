@@ -222,7 +222,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
         protected virtual void CanCheckBestPositionForShoutHiddenEnemies()
         {
             if (BattleManagerV2.GetHiddenEnemies().Count == 0 || Self.Stance != TrooperStance.Standing || !Self.CanMove() ||
-                Info.CanKilledEnemiesImmediately.Any()) return;
+                Info.CanShoutedEnemiesImmediately.Any()) return;
 
             if (Self.ActionPoints < Self.MoveCost() + Self.ShootCost) return;
 
@@ -241,7 +241,7 @@ namespace Com.CodeGame.CodeTroopers2013.DevKit.CSharpCgdk
                 avaliablePoints.Select(x => CurrentPathFinder.GetPathToPoint(x, Self.ToPoint(), GetTeammates()))
                                .OrderBy(x => x.Count)
                                .First();
-            if (minPath.Count == 0) return;
+            if (minPath.Count == 0 || minPath.Count > 2) return;
 
             AddAction(new Move {Action = ActionType.Move, X = minPath.First().X, Y = minPath.First().Y},
                       Priority.SetBestPositionForHiddenEnemies, "CanCheckBestPositionForShoutHiddenEnemies", "");
